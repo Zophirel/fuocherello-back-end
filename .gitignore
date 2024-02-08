@@ -7,7 +7,6 @@ Models/SignupAzienda.cs
 Models/Azienda.cs
 Models/Staff.cs
 Models/AppContact.cs
-Models/UtenteKeys.cs
 Models/SignUp.cs
 Models/AuthToken.cs
 Models/SignupPrivato.cs
