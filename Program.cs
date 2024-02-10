@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using final.Data;
+using Fuocherello.Data;
 using System.Net;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Cryptography;
-using final.Services.EmailService;
+using Fuocherello.Services.EmailService;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);

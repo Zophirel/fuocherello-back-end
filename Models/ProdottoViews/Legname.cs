@@ -1,7 +1,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
-namespace final.Models{
+namespace Fuocherello.Models{
 
     public class Legname {
     

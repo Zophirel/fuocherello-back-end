@@ -1,15 +1,15 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
-using final.Data;
-using final.Models;
+using Fuocherello.Data;
+using Fuocherello.Models;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using NpgsqlTypes;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-namespace final.Controllers;
+namespace Fuocherello.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -40,7 +40,7 @@ public class UtenteController : ControllerBase
     }
 
 
-    // GET: api/final.Models.Utente/5
+    // GET: api/Fuocherello.Models.Utente/5
     [HttpGet("{id}")]
     public ActionResult GetUtente(string id)
     {
@@ -293,7 +293,7 @@ public class UtenteController : ControllerBase
                 var imgPath = $"profiles/{sub}/{filename}";
                 PutObjectRequest request = new()
                 {
-                    BucketName = "fuocherello-bucket",
+                    BucketName = "Fuocherello-bucket",
                     Key = imgPath,
                     InputStream = file.OpenReadStream(),
                     ContentType = file.ContentType,
@@ -304,7 +304,7 @@ public class UtenteController : ControllerBase
                     // upload image to cloud
                     PutObjectResponse response = await s3Client.PutObjectAsync(request);
                     if(response.HttpStatusCode == System.Net.HttpStatusCode.Accepted){
-                        user.propic = $"https://fuocherello-bucket.s3.cubbit.eu/profiles/{sub}/{sub}.jpeg";
+                        user.propic = $"https://Fuocherello-bucket.s3.cubbit.eu/profiles/{sub}/{sub}.jpeg";
                         _context.SaveChanges();
                         return Ok();
                     }

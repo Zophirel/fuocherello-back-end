@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-namespace final.Models;
+namespace Fuocherello.Models;
 public class UserMessage{
     public  Guid? id {get; set;}
     public  Guid? chat_id {get; set;}

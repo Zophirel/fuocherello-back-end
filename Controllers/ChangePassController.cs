@@ -1,11 +1,11 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using final.Data;
-using final.Models;
-using final.Services.EmailService;
+using Fuocherello.Data;
+using Fuocherello.Models;
+using Fuocherello.Services.EmailService;
 
-namespace final.Controllers;
+namespace Fuocherello.Controllers;
 
 [ApiController]
 [Route("[controller]")]
@@ -29,7 +29,7 @@ public class ChangePassController : ControllerBase
         EmailDTO email = new();
         string token = _manager!.GenChangePassToken(id);
         string encodedToken = _manager.encode(token);
-        string reoverPassLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=fuocherello://changepass/{encodedToken}";
+        string reoverPassLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=Fuocherello://changepass/{encodedToken}";
         email.Subject = "Fuocherello - Richiesta cambio password";
         email.Body = 
         $"""

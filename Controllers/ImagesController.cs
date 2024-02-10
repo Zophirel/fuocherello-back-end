@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using final.Models;
+using Fuocherello.Models;
 using System.Security.Cryptography;
 using Npgsql;
-using final.Data;
+using Fuocherello.Data;
 using NpgsqlTypes;
 using System.Text;
 using Amazon.S3;
@@ -10,7 +10,7 @@ using Amazon.Runtime;
 using Amazon.S3.Model;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
-namespace final.Controllers;
+namespace Fuocherello.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -54,7 +54,7 @@ public class ImagesController : ControllerBase
             }
             List<string> s3imgsUrl = new();
             foreach(string filename in prod.immagini_prodotto){
-                s3imgsUrl.Add($"https://fuocherello-bucket.s3.cubbit.eu/products/{prod.autore}/{prod.id}/{filename}");
+                s3imgsUrl.Add($"https://Fuocherello-bucket.s3.cubbit.eu/products/{prod.autore}/{prod.id}/{filename}");
             }
             return Ok(s3imgsUrl);
         }else{
@@ -69,7 +69,7 @@ public class ImagesController : ControllerBase
             if(prod.immagini_prodotto == null){
                 return NoContent();    
             }
-            return Ok($"https://fuocherello-bucket.s3.cubbit.eu/products/{prod.autore}/{prod.id}/{prod.immagini_prodotto[0]}");
+            return Ok($"https://Fuocherello-bucket.s3.cubbit.eu/products/{prod.autore}/{prod.id}/{prod.immagini_prodotto[0]}");
         }else{
             return NotFound();
         }  
@@ -116,7 +116,7 @@ public class ImagesController : ControllerBase
                     var imgPath = $"products/{sub}/{prod.id}/{filename}";
                     PutObjectRequest request = new()
                     {
-                        BucketName = "fuocherello-bucket",
+                        BucketName = "Fuocherello-bucket",
                         Key = imgPath,
                         InputStream = file.OpenReadStream(),
                         ContentType = file.ContentType,
@@ -191,7 +191,7 @@ public class ImagesController : ControllerBase
             var imgPath = $"products/{sub}/{prodId}/{imagesToDelete[i]}";
             DeleteObjectRequest request = new()
             {
-                BucketName = "fuocherello-bucket",
+                BucketName = "Fuocherello-bucket",
                 Key = imgPath,
             };
             try{
@@ -208,7 +208,7 @@ public class ImagesController : ControllerBase
                 var imgPath = $"products/{sub}/{prodId}/{fileNamesToUpload[i]}";
                 PutObjectRequest request = new()
                 {
-                    BucketName = "fuocherello-bucket",
+                    BucketName = "Fuocherello-bucket",
                     Key = imgPath,
                     InputStream = files[i].OpenReadStream(),
                     ContentType = files[i].ContentType,
@@ -243,7 +243,7 @@ public class ImagesController : ControllerBase
                     //Get old images filenames from bucket
                     ListObjectsV2Request listOldFilesRequest = new()
                     {                            
-                        BucketName = "fuocherello-bucket",
+                        BucketName = "Fuocherello-bucket",
                         Prefix = $"products/{sub}/{prod!.id}",
                         StartAfter = $"products/{sub}/{prod.id}"
                     }; 
@@ -315,7 +315,7 @@ public class ImagesController : ControllerBase
                     //Get old images filenames from bucket
                     ListObjectsV2Request listOldFilesRequest = new()
                     {                            
-                        BucketName = "fuocherello-bucket",
+                        BucketName = "Fuocherello-bucket",
                         Prefix = $"products/{sub}/{prod!.id}",
                         StartAfter = $"products/{sub}/{prod.id}"
                     }; 
@@ -360,7 +360,7 @@ public class ImagesController : ControllerBase
                     //Get old images filenames from bucket
                     ListObjectsV2Request listOldFilesRequest = new()
                     {                            
-                        BucketName = "fuocherello-bucket",
+                        BucketName = "Fuocherello-bucket",
                         Prefix = $"profiles/{sub}",
                         StartAfter = $"profiles/{sub}"
                     }; 
@@ -372,7 +372,7 @@ public class ImagesController : ControllerBase
                             string propicName = sub + ".jpeg";       
                             PutObjectRequest request = new()
                             {
-                                BucketName = "fuocherello-bucket",
+                                BucketName = "Fuocherello-bucket",
                                 Key = $"profiles/{sub}/{propicName}",
                                 InputStream = uploadedFile.OpenReadStream(),
                                 ContentType = uploadedFile.ContentType,
@@ -384,7 +384,7 @@ public class ImagesController : ControllerBase
                             string propicName = ExtractImageNameFromPath(oldPropic.S3Objects[0].Key);
                             PutObjectRequest request = new()
                             {
-                                BucketName = "fuocherello-bucket",
+                                BucketName = "Fuocherello-bucket",
                                 Key = $"profiles/{sub}/{propicName}",
                                 InputStream = uploadedFile.OpenReadStream(),
                                 ContentType = uploadedFile.ContentType,
@@ -422,7 +422,7 @@ public class ImagesController : ControllerBase
                 
                 DeleteObjectRequest request = new()
                 {
-                    BucketName = "fuocherello-bucket",
+                    BucketName = "Fuocherello-bucket",
                     Key = $"products/{sub}/",
                 };
                 await s3Client.DeleteObjectAsync(request);
@@ -451,20 +451,20 @@ public class ImagesController : ControllerBase
                         string imageName = _manager.encode(HmacHash(Guid.NewGuid())) + ".jpeg";       
                         PutObjectRequest request = new()
                         {
-                            BucketName = "fuocherello-bucket",
+                            BucketName = "Fuocherello-bucket",
                             Key = $"chats/{chatId}/{imageName}",
                             InputStream = file.OpenReadStream(),
                             ContentType = file.ContentType,
                             UseChunkEncoding = false,
                             CannedACL = S3CannedACL.PublicRead
                         };
-                        imgurls.Add($"https://fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}");
+                        imgurls.Add($"https://Fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}");
                         UserMessage message = new();
                         message.id = Guid.NewGuid();
                         message.chat_id = Guid.Parse(chatId);
                         message.mandante_id = sub;
                         message.prod_id = chat.prod_id;
-                        message.messaggio = $"https://fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}";
+                        message.messaggio = $"https://Fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}";
                         message.delivered = false;
                         message.sent_at = ((ulong)((DateTimeOffset) DateTime.Now).ToUnixTimeMilliseconds());
                         messages.Add(message);

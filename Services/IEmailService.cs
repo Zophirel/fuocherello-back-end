@@ -1,5 +1,5 @@
-using final.Models;
-namespace final.Services.EmailService
+using Fuocherello.Models;
+namespace Fuocherello.Services.EmailService
 {
     public interface IEmailService
     {

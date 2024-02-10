@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using final.Models;
-using final.Data;
+using Fuocherello.Models;
+using Fuocherello.Data;
 using System.Security.Cryptography;
 
-namespace final.Controllers;
+namespace Fuocherello.Controllers;
 
 [ApiController]
 [Route("[controller]")]

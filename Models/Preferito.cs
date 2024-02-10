@@ -1,4 +1,4 @@
-namespace final.Models
+namespace Fuocherello.Models
 {
     public class Preferito
     {

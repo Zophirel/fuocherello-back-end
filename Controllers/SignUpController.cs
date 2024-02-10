@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
-using final.Models;
-using final.Data;
+using Fuocherello.Models;
+using Fuocherello.Data;
 using Npgsql;
-using final.Services.EmailService;
+using Fuocherello.Services.EmailService;
 using System.Text;
 using System.Security.Cryptography;
 using Google.Apis.Auth;
 
-namespace final.Controllers;
+namespace Fuocherello.Controllers;
 
 [ApiController]
 [Route("/signup/privato")]
@@ -38,7 +38,7 @@ public class SignUpController : ControllerBase
         string pathParameter = splittedUrl[1]; 
         
         //redirect api force the server to serve only link inside the app
-        url = $"fuocherello://app/{pathParameter}/{encodedToken}";
+        url = $"Fuocherello://app/{pathParameter}/{encodedToken}";
         return new RedirectResult(url);
     }
     
@@ -73,7 +73,7 @@ public class SignUpController : ControllerBase
             string encodedToken = System.Convert.ToBase64String(Encoding.ASCII.GetBytes(verifyToken))
             .TrimEnd(padding).Replace('+', '-').Replace('/', '_');
             
-            string verifyLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=fuocherello://verifyemail/{encodedToken}";
+            string verifyLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=Fuocherello://verifyemail/{encodedToken}";
 
             Console.WriteLine("sending email");
                 EmailDTO email = new()

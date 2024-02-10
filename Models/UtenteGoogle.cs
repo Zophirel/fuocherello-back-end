@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 //calasses needed to let the user login / signup with google oauth 
-namespace final.Models{
+namespace Fuocherello.Models{
     public class UtenteGoogle
     {
 

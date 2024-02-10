@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
-namespace final.Models
+namespace Fuocherello.Models
 {
     public class Utente
     {

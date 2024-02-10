@@ -6,7 +6,7 @@ using Google.Apis.Auth;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
 
-namespace final.Models
+namespace Fuocherello.Models
 {
     public class MyStatusCodeResult{
 

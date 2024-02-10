@@ -1,5 +1,5 @@
 
-namespace final.Models{
+namespace Fuocherello.Models{
     [Serializable]
     public class UserNotFound : Exception
     {

@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v7.0": {
-      "final/1.0.0": {
+      "Fuocherello/1.0.0": {
         "dependencies": {
           "AWSSDK.S3": "3.7.203.4",
           "BCrypt.Net-Next": "4.0.3",
@@ -30,7 +30,7 @@
           "System.IdentityModel.Tokens.Jwt": "6.25.1"
         },
         "runtime": {
-          "final.dll": {}
+          "Fuocherello.dll": {}
         }
       },
       "AWSSDK.Core/3.7.201.9": {
@@ -2791,7 +2791,7 @@
     }
   },
   "libraries": {
-    "final/1.0.0": {
+    "Fuocherello/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

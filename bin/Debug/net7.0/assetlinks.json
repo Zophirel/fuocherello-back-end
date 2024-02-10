@@ -2,7 +2,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.diodorogroup.fuocherello",
+      "package_name": "com.diodorogroup.Fuocherello",
       "sha256_cert_fingerprints":
       ["37:9F:81:3A:10:11:2D:C5:7A:35:D4:70:5C:BB:4A:36:56:52:F2:88:DA:5C:41:AA:4E:A1:D0:86:B2:A0:28:0E"]
     }

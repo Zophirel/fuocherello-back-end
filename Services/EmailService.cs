@@ -1,10 +1,10 @@
-using final.Models;
+using Fuocherello.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using MimeKit.Text;
 
-namespace final.Services.EmailService
+namespace Fuocherello.Services.EmailService
 {
     public class EmailService : IEmailService
     {

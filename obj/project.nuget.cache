@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "tPdK/HmChUI+s3mqKFi9qMri2CSQtGvltGtc3MJ7E/ieWtzfvPP+HHVnGOhHvzTo4eEqDKwoNSvwaKMnOfIa4g==",
+  "dgSpecHash": "Z8FOUUK12bEmBCydx025jlXmL8uH26F65vv31tlHYYIvPfGFt77GJlIOObcW1Uj5Lj79oNL9e1O/do1NUzEsUw==",
   "success": true,
-  "projectFilePath": "/home/fra/Desktop/fuocherello/final/final.csproj",
+  "projectFilePath": "/home/fra/Desktop/fuocherello/github_cloned_repo/fuocherello-back-end/Fuocherello.csproj",
   "expectedPackageFiles": [
     "/home/fra/.nuget/packages/awssdk.core/3.7.201.9/awssdk.core.3.7.201.9.nupkg.sha512",
     "/home/fra/.nuget/packages/awssdk.s3/3.7.203.4/awssdk.s3.3.7.203.4.nupkg.sha512",

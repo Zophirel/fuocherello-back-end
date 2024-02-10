@@ -1,13 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
-using final.Data;
-using final.Models;
-using final.Services.EmailService;
+using Fuocherello.Data;
+using Fuocherello.Models;
+using Fuocherello.Services.EmailService;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 
-namespace final.Controllers
+namespace Fuocherello.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
