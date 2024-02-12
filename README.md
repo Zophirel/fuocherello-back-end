@@ -36,10 +36,10 @@ An MVC project mainly composed by models, controllers and a custom helper the vi
 	├── /Singleton
 	├── Program.cs
 	├── appsettings.Development.json      (𝗣𝗿𝗲𝘀𝗲𝗻𝘁 𝗯𝘂𝘁 𝗶𝗻𝗰𝗼𝗺𝗽𝗹𝗲𝘁𝗲)
-	├── appsettings.json                             (𝗣𝗿𝗲𝘀𝗲𝗻𝘁 𝗯𝘂𝘁 𝗶𝗻𝗰𝗼𝗺𝗽𝗹𝗲𝘁𝗲)
-	├── assetlinks.json                                 (𝗥𝗲𝗽𝗹𝗮𝗰𝗲 𝘁𝗼 𝘂𝘀𝗲 𝗼𝘁𝗵𝗲𝗿 𝗱𝘆𝗻𝗮𝗺𝗶𝗰 𝗹𝗶𝗻𝗸𝘀)
-	├── key                                                  (𝗺𝗶𝘀𝘀𝗶𝗻𝗴)
-	└── sslCertificate.pfx                             (𝗺𝗶𝘀𝘀𝗶𝗻𝗴)
+	├── appsettings.json                  (𝗣𝗿𝗲𝘀𝗲𝗻𝘁 𝗯𝘂𝘁 𝗶𝗻𝗰𝗼𝗺𝗽𝗹𝗲𝘁𝗲)
+	├── assetlinks.json                   (𝗥𝗲𝗽𝗹𝗮𝗰𝗲 𝘁𝗼 𝘂𝘀𝗲 𝗼𝘁𝗵𝗲𝗿 𝗱𝘆𝗻𝗮𝗺𝗶𝗰 𝗹𝗶𝗻𝗸𝘀)
+	├── key                               (𝗺𝗶𝘀𝘀𝗶𝗻𝗴)
+	└── sslCertificate.pfx                (𝗺𝗶𝘀𝘀𝗶𝗻𝗴)
 
 ### 1. [appsettings.json](https://github.com/Zophirel/fuocherello-back-end/blob/main/appsettings.json "appsettings.json") - [appsettings.Development.json](https://github.com/Zophirel/fuocherello-back-end/blob/main/appsettings.Development.json "appsettings.Development.json")
 In these files is specified the configuration needed to connect the server with:
