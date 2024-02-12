@@ -3,10 +3,7 @@ using Fuocherello.Data;
 using System.Net;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-<<<<<<< HEAD
-=======
 using System.Security.Cryptography;
->>>>>>> 436ad41e4c626c1f349b08b1359b18a7cb06a3e9
 using Fuocherello.Services.EmailService;
 using Npgsql;
 using Fuocherello.Singleton.JwtManager;
