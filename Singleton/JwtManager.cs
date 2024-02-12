@@ -6,12 +6,8 @@ using Fuocherello.Models;
 using Google.Apis.Auth;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
-
-<<<<<<< HEAD:Singleton/JwtManager.cs
 namespace Fuocherello.Singleton.JwtManager
-=======
-namespace Fuocherello.Models
->>>>>>> 436ad41e4c626c1f349b08b1359b18a7cb06a3e9:Models/JwtManager.cs
+
 {
     public class MyStatusCodeResult{
 
