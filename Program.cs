@@ -2,22 +2,37 @@ using Microsoft.EntityFrameworkCore;
 using Fuocherello.Data;
 using System.Net;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+<<<<<<< HEAD
+=======
 using System.Security.Cryptography;
+>>>>>>> 436ad41e4c626c1f349b08b1359b18a7cb06a3e9
 using Fuocherello.Services.EmailService;
 using Npgsql;
+using Fuocherello.Singleton.JwtManager;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 //DB connection
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 string ConnString = builder.Configuration.GetConnectionString("DbContext")!;
-builder.Services.AddDbContext<ApiServerContext>(options =>
-    options.UseNpgsql(ConnString));
+builder.Services.AddDbContext<ApiServerContext>(options => options.UseNpgsql(ConnString));
 await using var dataSource = NpgsqlDataSource.Create(ConnString);
 builder.Services.AddSingleton(dataSource);
 
+string filename = "key";
+using (RSA rsa = RSA.Create())
+{
+    byte[] privateKeyBytes = rsa.ExportRSAPrivateKey();
+    File.WriteAllBytes(filename, privateKeyBytes);
+}
+
+RSA rsaKey = RSA.Create();
+rsaKey.ImportRSAPrivateKey(File.ReadAllBytes("key"), out _);
+
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<IJwtManager>(new JwtManager(rsaKey));
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -26,10 +41,7 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 //deeplinks json auth file
 string jsonFilePath = $"{Path.GetFullPath(".")}/assetlinks.json";
 
-RSA rsaKey = RSA.Create();
-rsaKey.ImportRSAPrivateKey(File.ReadAllBytes("key"), out _);
-
-builder.Services.AddSingleton(rsaKey);
+//builder.Services.AddSingleton(rsaKey);
 
 builder.Services.AddAuthentication("jwt")
     .AddJwtBearer("jwt", o => {

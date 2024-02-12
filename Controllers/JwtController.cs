@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Fuocherello.Data;
-using Fuocherello.Models;
-using System.Security.Cryptography;
-
+using Fuocherello.Singleton.JwtManager;
 namespace Fuocherello.Controllers;
 
 [ApiController]
@@ -11,12 +9,12 @@ namespace Fuocherello.Controllers;
 public class JwtController : ControllerBase
 {
     private readonly ApiServerContext _context;
-    private static JwtManager? _manager;
+    private readonly IJwtManager? _manager;
     private readonly IConfiguration _configuration;
-    public JwtController(ApiServerContext _context, RSA key, IConfiguration configuration)
+    public JwtController(ApiServerContext _context,  IConfiguration configuration, JwtManager manager)
     {
         this._context = _context;
-        _manager = JwtManager.GetInstance(key);
+        _manager = manager;
         _configuration = configuration;
     }
 
@@ -38,10 +36,10 @@ public class JwtController : ControllerBase
         Console.WriteLine(type);
         if(type == "Access"){
             MyStatusCodeResult valid = _manager.ValidateAccessToken(Token); 
-            return StatusCode(valid.statusCode);
+            return StatusCode(valid.StatusCode);
         }else if(type == "Refresh"){
             MyStatusCodeResult valid = _manager.ValidateRefreshToken(Token); 
-            return StatusCode(valid.statusCode, valid.result);
+            return StatusCode(valid.StatusCode, valid.Result);
         }
         return Forbid();
     }

@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Fuocherello.Models;
 using Fuocherello.Data;
-using System.Security.Cryptography;
+using Fuocherello.Singleton.JwtManager;
+
 
 namespace Fuocherello.Controllers;
 
@@ -11,11 +12,11 @@ namespace Fuocherello.Controllers;
 public class LoginController : ControllerBase
 {
     private readonly ApiServerContext _context;
-    private static JwtManager? _manager;
-    public LoginController(ApiServerContext context,  RSA key, IConfiguration configuration)
+    private readonly IJwtManager? _manager;
+    public LoginController(ApiServerContext context, IJwtManager manager)
     {
         _context = context;
-        _manager = JwtManager.GetInstance(key);
+        _manager = manager;
     }
     
     [HttpPost]

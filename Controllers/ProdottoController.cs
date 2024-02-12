@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Fuocherello.Data;
 using Fuocherello.Models;
-using System.Security.Cryptography;
 using NpgsqlTypes;
 using System.Text.Json;
 using System.IdentityModel.Tokens.Jwt;
@@ -12,6 +11,8 @@ using Amazon.Runtime;
 using System.Text;
 using Npgsql;
 using NuGet.Protocol;
+using System.Security.Cryptography;
+using Fuocherello.Singleton.JwtManager;
 
 namespace Fuocherello.Controllers;
 
@@ -22,14 +23,14 @@ public class ProdottoController : ControllerBase
 {
     private readonly ApiServerContext _context;
     private readonly IAmazonS3 _s3Client;
-    private readonly JwtManager _manager;
+    private readonly IJwtManager _manager;
     private readonly IConfiguration _configuration;
     private readonly NpgsqlDataSource _conn;
-    public ProdottoController(ApiServerContext context, RSA key, IConfiguration configuration,  NpgsqlDataSource conn)
+    public ProdottoController(ApiServerContext context,  IConfiguration configuration,  NpgsqlDataSource conn, IJwtManager manager)
     {
         _conn = conn;
         _context = context;
-        _manager = JwtManager.GetInstance(key);
+        _manager = manager;
         _configuration = configuration;
         string awsAccessKeyId = configuration.GetValue<string>("S3awsAccessKeyId")!;
         string awsSecretAccessKey = configuration.GetValue<string>("S3awsSecretAccessKey")!;
@@ -204,7 +205,7 @@ public class ProdottoController : ControllerBase
     {  
 
         MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-        if (isValid.statusCode == 200){
+        if (isValid.StatusCode == 200){
             string role = _manager.ExtractRole(token) ?? ""; 
             string sub = _manager.ExtractSub(token) ?? "";
             
@@ -223,7 +224,7 @@ public class ProdottoController : ControllerBase
                 }
             }
         }
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 
     // GET: api/prodotto/5
@@ -250,7 +251,7 @@ public class ProdottoController : ControllerBase
         try{
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
 
-            if (isValid.statusCode == 200)
+            if (isValid.StatusCode == 200)
             {
                 string? role = _manager.ExtractRole(token);
                 string? sub = _manager.ExtractSub(token);
@@ -312,7 +313,7 @@ public class ProdottoController : ControllerBase
                     }
                 }
             }
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }catch(Exception e){
             return BadRequest(e.Message);
         }
@@ -322,7 +323,7 @@ public class ProdottoController : ControllerBase
     public async Task<ActionResult<Prodotto>> NuovoPreferitoAsync([FromHeader(Name = "Authentication")] string token, [FromHeader(Name = "ProdID")] Guid prod_id)
     {
         MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-        if (isValid.statusCode == 200)
+        if (isValid.StatusCode == 200)
         {
             JwtSecurityTokenHandler jwtHandler = new();
             var jwt = jwtHandler.ReadJwtToken(token);
@@ -350,7 +351,7 @@ public class ProdottoController : ControllerBase
                 }     
             }
         }
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 
     [HttpPost]
@@ -358,7 +359,7 @@ public class ProdottoController : ControllerBase
     {
         try{
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-            if (isValid.statusCode == 200)
+            if (isValid.StatusCode == 200)
             {
                 string? role = _manager.ExtractRole(token);
                 string? sub = _manager.ExtractSub(token);         
@@ -395,7 +396,7 @@ public class ProdottoController : ControllerBase
                     return Ok(JsonSerializer.Serialize(NuovoProdotto));
                 }
             }
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }catch(Exception e){
             return BadRequest(e.Message);
         }
@@ -407,7 +408,7 @@ public class ProdottoController : ControllerBase
     {
         try{
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-            if (isValid.statusCode == 200)
+            if (isValid.StatusCode == 200)
             {
                 string? role = _manager.ExtractRole(token); 
                 string? sub = _manager.ExtractSub(token);
@@ -426,7 +427,7 @@ public class ProdottoController : ControllerBase
                     return Ok();
                 }
             }
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }catch(Exception e){
             return BadRequest(e.Message);
         }
@@ -439,7 +440,7 @@ public class ProdottoController : ControllerBase
     {
         try{
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-            if (isValid.statusCode == 200)
+            if (isValid.StatusCode == 200)
             {
                 string? sub = _manager.ExtractSub(token); 
                 string? role = _manager.ExtractRole(token);
@@ -485,7 +486,7 @@ public class ProdottoController : ControllerBase
                 }
             }
 
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }catch(Exception e){
             return BadRequest(e.Message);
         } 
@@ -501,16 +502,14 @@ public class ProdottoController : ControllerBase
         if(secretKey != null && id != null){
             byte[] secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
             byte[] messageBytes = Encoding.UTF8.GetBytes(id.ToString()!);
-            
-            using (HMACSHA256 hmac = new(secretKeyBytes))
-            {
-                byte[] hashBytes = hmac.ComputeHash(messageBytes);
-                hash = Convert.ToBase64String(hashBytes);
-                string url_safe_id = _manager!.encode(hash);
 
-                Console.WriteLine("HMAC hash: " + hash);
-                return url_safe_id;
-            }
+            using HMACSHA256 hmac = new(secretKeyBytes);
+            byte[] hashBytes = hmac.ComputeHash(messageBytes);
+            hash = Convert.ToBase64String(hashBytes);
+            string url_safe_id = _manager!.Encode(hash);
+
+            Console.WriteLine("HMAC hash: " + hash);
+            return url_safe_id;
         }
         return "";
     }
@@ -550,7 +549,7 @@ public class ProdottoController : ControllerBase
             List<string> fileNames = oldImages.Except(imagesToDelete).ToList();
             for(int i = 0; i < newImages.Count; i++){
                 if(!oldImages.Contains(newImages[i])){
-                    newImages[i] = $"{_manager.encode(HmacHash(Guid.NewGuid()))}";
+                    newImages[i] = $"{_manager.Encode(HmacHash(Guid.NewGuid()))}";
                 }
             }
             return newImages;
@@ -604,7 +603,7 @@ public class ProdottoController : ControllerBase
         var uploadedFileName = files.Select(file => file.FileName).ToList().GetRange(0, rangeToSelect);
         foreach (var file in files.GetRange(0, rangeToSelect))
         {
-            var filename = _manager.encode(HmacHash(Guid.NewGuid()))+".jpeg";
+            var filename = _manager.Encode(HmacHash(Guid.NewGuid()))+".jpeg";
             var imgPath = $"products/{sub}/{prod.id}/{filename}";
             PutObjectRequest request = new()
             {
@@ -657,7 +656,7 @@ public class ProdottoController : ControllerBase
                 }else if(numberOfOldFiles == 0){
                 
                     for(int i = 0; i < numberOfNewFiles && i < 5; i++){    
-                        newFileName.Add($"{_manager.encode(HmacHash(Guid.NewGuid()))}.jpeg");
+                        newFileName.Add($"{_manager.Encode(HmacHash(Guid.NewGuid()))}.jpeg");
                     }
                     await UploadProductImagesToBucket(prod.autore!, prod.id.ToString()!, newFileName, files);
                     return newFileName;

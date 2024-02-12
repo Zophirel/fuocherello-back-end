@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Cryptography;
 using Fuocherello.Data;
+using Fuocherello.Singleton.JwtManager;
 using Fuocherello.Models;
 using Fuocherello.Services.EmailService;
 using Microsoft.AspNetCore.Mvc;
@@ -14,16 +14,14 @@ namespace Fuocherello.Controllers
     public class EmailController : ControllerBase
     {
         private readonly IEmailService _emailService;
-        private readonly RSA _rsa;
-        private static JwtManager? _manager; 
+        private readonly IJwtManager _manager; 
         private readonly ApiServerContext _context;
 
-        public EmailController(IEmailService emailService, RSA rsa, NpgsqlDataSource conn, ApiServerContext context)
+        public EmailController(IEmailService emailService, NpgsqlDataSource conn, ApiServerContext context, IJwtManager manager)
         {
             _context = context;
             _emailService = emailService;
-            _rsa = rsa;
-            _manager = JwtManager.GetInstance(rsaKey: _rsa);
+            _manager = manager;
         }
 
         [HttpPost]
@@ -36,11 +34,11 @@ namespace Fuocherello.Controllers
         [HttpGet("verify/{encodedToken}")]
         public async Task<ActionResult> VerifyEmail(string encodedToken) {
             try{
-                string token = _manager!.decode(encodedToken);
+                string token = _manager!.Decode(encodedToken);
                 Console.WriteLine(token);
                 var isValid = _manager!.ValidateVerifyEmailToken(token);
                 Console.WriteLine($"is valid: {isValid}");
-                if (isValid.statusCode == 200)
+                if (isValid.StatusCode == 200)
                 {
                     var jwtHandler = new JwtSecurityTokenHandler();
                     var jwt = jwtHandler.ReadJwtToken(token);
@@ -62,7 +60,7 @@ namespace Fuocherello.Controllers
                         }
                     }
                 }
-                return StatusCode(isValid.statusCode);
+                return StatusCode(isValid.StatusCode);
             }catch(Exception e){
                 Console.WriteLine(e.Message);
                 return BadRequest();

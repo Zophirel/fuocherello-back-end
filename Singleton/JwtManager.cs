@@ -2,38 +2,40 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Fuocherello.Models;
 using Google.Apis.Auth;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
 
+<<<<<<< HEAD:Singleton/JwtManager.cs
+namespace Fuocherello.Singleton.JwtManager
+=======
 namespace Fuocherello.Models
+>>>>>>> 436ad41e4c626c1f349b08b1359b18a7cb06a3e9:Models/JwtManager.cs
 {
     public class MyStatusCodeResult{
 
         public MyStatusCodeResult(int statusCode, string? result = null){
-            this.statusCode = statusCode;
-            this.result = result;
+            StatusCode = statusCode;
+            Result = result;
         }
 
-        public string? result {get;}
-        public int statusCode {get;}
+        public string? Result {get;}
+        public int StatusCode {get;}
     }
     
-    public class JwtManager
+    public class JwtManager : IJwtManager
     { 
         static readonly char[] padding = { '=' };
-        private static JwtManager? instance;
-        private static readonly object lockObject = new();
         private readonly JwtSecurityTokenHandler _tokenHandler = new();
         private readonly TokenValidationParameters? _validationParameters;
         private readonly JwtHeader? _header;
-    
 
         // Private constructor to prevent instantiation from outside
-        private JwtManager(RSA rsaKey)
+        public JwtManager(RSA key)
         {
             
-            var securityKey = new RsaSecurityKey(rsaKey);
+            var securityKey = new RsaSecurityKey(key);
             _validationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -46,20 +48,11 @@ namespace Fuocherello.Models
             {
                 { "enc", "A256CBC-HS512" }
             };
+
+            RSA rsaKey = RSA.Create();
+            rsaKey.ImportRSAPrivateKey(File.ReadAllBytes("key"), out _);
         }
 
-        // Public method to get the singleton instance of JwtManager
-        public static JwtManager GetInstance(RSA rsaKey)
-        {
-            if (instance == null)
-            {
-                lock (lockObject)
-                {
-                    instance ??= new JwtManager(rsaKey);
-                }
-            }
-            return instance;
-        }
 
         private static bool ValidateLifetTime(ClaimsPrincipal payload){
             string? expStringValue = payload.Claims.FirstOrDefault(c => c.Type == "exp")?.Value;
@@ -74,12 +67,12 @@ namespace Fuocherello.Models
             return false;
         }
         
-        public string encode(string token){
-           return System.Convert.ToBase64String(Encoding.ASCII.GetBytes(token))
+        public string Encode(string token){
+           return Convert.ToBase64String(Encoding.ASCII.GetBytes(token))
                         .TrimEnd(padding).Replace('+', '-').Replace('/', '_');
         }
 
-        public string decode(string encodedToken){
+        public string Decode(string encodedToken){
             string incoming = encodedToken.Replace('_', '/').Replace('-', '+');
             switch(encodedToken.Length % 4) {
                 case 2: incoming += "=="; break;
@@ -181,7 +174,6 @@ namespace Fuocherello.Models
             {
                 new Claim("sub", id),
                 new Claim("type", "VerifyEmail")
-                // Add additional claims as needed
             };
 
 
@@ -197,7 +189,6 @@ namespace Fuocherello.Models
             {
                 new Claim("sub", id),
                 new Claim("type", "ChangePass")
-                // Add additional claims as needed
             };
  
 
@@ -298,7 +289,6 @@ namespace Fuocherello.Models
             //Token non valido
             return new MyStatusCodeResult(403);
         }
-    
     }
 
 }

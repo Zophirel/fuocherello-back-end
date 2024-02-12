@@ -1,9 +1,9 @@
-using System.Security.Cryptography;
+
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using Fuocherello.Data;
-using Fuocherello.Models;
-using Fuocherello.Services.EmailService;
+using final.Data;
+using final.Models;
+using final.Services.EmailService;
 
 namespace Fuocherello.Controllers;
 
@@ -11,16 +11,16 @@ namespace Fuocherello.Controllers;
 [Route("[controller]")]
 public class ChangePassController : ControllerBase
 {
-    private static JwtManager? _manager;
+    private readonly IJwtManager _manager;
     private readonly ApiServerContext _context;
     private readonly NpgsqlDataSource _conn;
-    public ChangePassController(ApiServerContext context, NpgsqlDataSource conn, RSA key){
+    public ChangePassController(ApiServerContext context, NpgsqlDataSource conn, IJwtManager manager){
         _conn = conn;
         _context = context;
-        _manager = JwtManager.GetInstance(key);
+        _manager = manager;
     }
 
-    private static Task _SendEmail(string id, string emailTo)
+    private Task _SendEmail(string id, string emailTo)
     {
         IConfiguration configuration = new ConfigurationBuilder()
         .AddJsonFile("appsettings.json")
@@ -29,7 +29,7 @@ public class ChangePassController : ControllerBase
         EmailDTO email = new();
         string token = _manager!.GenChangePassToken(id);
         string encodedToken = _manager.encode(token);
-        string reoverPassLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=Fuocherello://changepass/{encodedToken}";
+        string reoverPassLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=fuocherello://changepass/{encodedToken}";
         email.Subject = "Fuocherello - Richiesta cambio password";
         email.Body = 
         $"""
@@ -65,10 +65,10 @@ public class ChangePassController : ControllerBase
     [HttpPut("{token}")]
     public ActionResult ChangePassword(string token, [FromHeader] string password){
         
-        var decodedToken = _manager!.decode(token);
+        var decodedToken = _manager!.Decode(token);
         MyStatusCodeResult? isValid = _manager.ValidateRecoverPassToken(decodedToken);
 
-        if(isValid!.statusCode == 200){
+        if(isValid!.StatusCode == 200){
             var UserId = _manager.ExtractSub(decodedToken);
             Utente? user = _context.utente.SingleOrDefault(user => user.hashed_id == UserId);
             if(user is not null){
@@ -81,7 +81,7 @@ public class ChangePassController : ControllerBase
                 return BadRequest();
             }   
         }else{
-            return StatusCode(isValid.statusCode, isValid.result);
+            return StatusCode(isValid.StatusCode, isValid.Result);
         }
     }
 }

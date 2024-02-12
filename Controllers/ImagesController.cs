@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Fuocherello.Models;
-using System.Security.Cryptography;
 using Npgsql;
 using Fuocherello.Data;
 using NpgsqlTypes;
@@ -10,6 +9,8 @@ using Amazon.Runtime;
 using Amazon.S3.Model;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Security.Cryptography;
+using Fuocherello.Singleton.JwtManager;
 namespace Fuocherello.Controllers;
 
 [ApiController]
@@ -18,16 +19,16 @@ public class ImagesController : ControllerBase
 {
     private readonly NpgsqlDataSource conn;
     private readonly ApiServerContext _context;
-    private readonly JwtManager _manager;
+    private readonly IJwtManager _manager;
     private readonly IConfiguration _configuration;
     private readonly IAmazonS3 s3Client;
     private readonly HubConnection signalRClient;
 
-    public ImagesController(RSA key, NpgsqlDataSource conn, ApiServerContext context, IConfiguration configuration)
+    public ImagesController(NpgsqlDataSource conn, ApiServerContext context, IConfiguration configuration, IJwtManager manager)
     {
         this.conn = conn;
         _context = context;
-        _manager = JwtManager.GetInstance(key);
+        _manager = manager;
         _configuration = configuration;
         string awsAccessKeyId = configuration.GetValue<string>("S3awsAccessKeyId")!;
         string awsSecretAccessKey = configuration.GetValue<string>("S3awsSecretAccessKey")!;
@@ -82,16 +83,14 @@ public class ImagesController : ControllerBase
         if(secretKey != null && id != null){
             byte[] secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
             byte[] messageBytes = Encoding.UTF8.GetBytes(id.ToString()!);
-            
-            using (HMACSHA256 hmac = new(secretKeyBytes))
-            {
-                byte[] hashBytes = hmac.ComputeHash(messageBytes);
-                hash = Convert.ToBase64String(hashBytes);
-                string url_safe_id = _manager.encode(hash);
 
-                Console.WriteLine("HMAC hash: " + hash);
-                return url_safe_id;
-            }
+            using HMACSHA256 hmac = new(secretKeyBytes);
+            byte[] hashBytes = hmac.ComputeHash(messageBytes);
+            hash = Convert.ToBase64String(hashBytes);
+            string url_safe_id = _manager.Encode(hash);
+
+            Console.WriteLine("HMAC hash: " + hash);
+            return url_safe_id;
         }
         return "";
     }
@@ -101,7 +100,7 @@ public class ImagesController : ControllerBase
     public async Task<ActionResult<Prodotto>> PostProdottoImagesToBucket([FromForm] List<IFormFile> files, [FromHeader(Name = "Authentication")] string token)
     {
         var isValid = _manager.ValidateAccessToken(token);
-         if(isValid.statusCode == 200){
+         if(isValid.StatusCode == 200){
             //Get the product 
             string sub = _manager.ExtractSub(token)!;
             Prodotto? prod = _context.prodotto.Where(prod => prod.autore == sub).OrderBy(prod => prod.created_at).Last();                
@@ -112,7 +111,7 @@ public class ImagesController : ControllerBase
                 var uploadedFileName = files.Select(file => file.FileName).ToList().GetRange(0, rangeToSelect);
                 foreach (var file in files.GetRange(0, rangeToSelect))
                 {
-                    var filename = _manager.encode(HmacHash(Guid.NewGuid()))+".jpeg";
+                    var filename = _manager.Encode(HmacHash(Guid.NewGuid()))+".jpeg";
                     var imgPath = $"products/{sub}/{prod.id}/{filename}";
                     PutObjectRequest request = new()
                     {
@@ -139,7 +138,7 @@ public class ImagesController : ControllerBase
                 return BadRequest("Prodotto non valido");
             }
         }
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 
     
@@ -179,7 +178,7 @@ public class ImagesController : ControllerBase
             List<string> fileNames = oldImages.Except(imagesToDelete).ToList();
             for(int i = 0; i < newImages.Count; i++){
                 if(!oldImages.Contains(newImages[i])){
-                    newImages[i] = $"{_manager.encode(HmacHash(Guid.NewGuid()))}";
+                    newImages[i] = $"{_manager.Encode(HmacHash(Guid.NewGuid()))}";
                 }
             }
             return newImages;
@@ -235,7 +234,7 @@ public class ImagesController : ControllerBase
             Console.WriteLine("MODIFICANDO IMMAGINI DEL POST");
            
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-            if(isValid.statusCode == 200){
+            if(isValid.StatusCode == 200){
                 //check if product exists
                 string sub = _manager.ExtractSub(token)!;
                 Prodotto?prod =_context.prodotto.FirstOrDefault(prod => prod.autore == sub && prod.id == id);    
@@ -261,7 +260,7 @@ public class ImagesController : ControllerBase
                     }else if(numberOfOldFiles == 0){
                         List<string> newFileNames = new();
                         for(int i = 0; i < numberOfNewFiles && i < 5; i++){    
-                            newFileNames.Add($"{_manager.encode(HmacHash(Guid.NewGuid()))}.jpeg");
+                            newFileNames.Add($"{_manager.Encode(HmacHash(Guid.NewGuid()))}.jpeg");
                         }
                         await PostProductImagesToBucket(sub, prod.id.ToString()!, newFileNames, files);
                         return Ok();
@@ -293,7 +292,7 @@ public class ImagesController : ControllerBase
                 }
             }
             
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }
         catch (Exception e)
         {  
@@ -307,7 +306,7 @@ public class ImagesController : ControllerBase
         try
         {       
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-            if(isValid.statusCode == 200){
+            if(isValid.StatusCode == 200){
                 //check if product exists
                 string sub = _manager.ExtractSub(token)!;
                 Prodotto?prod =_context.prodotto.FirstOrDefault(prod => prod.autore == sub && prod.id == id);    
@@ -335,7 +334,7 @@ public class ImagesController : ControllerBase
                     return BadRequest("PRODOTTO NON ESISTENTE");
                 }
             }
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }
         catch (Exception e)
         {  
@@ -352,7 +351,7 @@ public class ImagesController : ControllerBase
         try
         {  
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-            if(isValid.statusCode == 200){
+            if(isValid.StatusCode == 200){
                 //check if product exists
                 string sub = _manager.ExtractSub(token)!;
                     
@@ -401,7 +400,7 @@ public class ImagesController : ControllerBase
                     return NotFound("Prodotto non trovato");
                 }
             }
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }
         catch (DirectoryNotFoundException)
         {  
@@ -415,7 +414,7 @@ public class ImagesController : ControllerBase
     public async Task<IActionResult> DeleteUserProfilePicFromBucket(IFormFile uploadedFile, [FromHeader(Name = "Authentication")] string token)
     {
         MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-        if(isValid.statusCode == 200){
+        if(isValid.StatusCode == 200){
             //check if product exists
             string sub = _manager.ExtractSub(token)!;
             if(sub != null){
@@ -431,14 +430,14 @@ public class ImagesController : ControllerBase
                 return NotFound("Utente non trovato");
             }
         }
-        return StatusCode(isValid.statusCode); 
+        return StatusCode(isValid.StatusCode); 
     }
 
     
     [HttpPut("Chat")]
     public async Task<IActionResult> PutChatPicToBucket([FromForm(Name = "files")] List<IFormFile> files, [FromForm] string chatId, [FromHeader(Name = "Authentication")] string token){
         MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
-        if(isValid.statusCode == 200){
+        if(isValid.StatusCode == 200){
             //check if the chat exists and if the user partecipate in the chat
             string? sub = _manager.ExtractSub(token);
             ChatList? chat = _context.lista_chat.SingleOrDefault(chat => chat.id == Guid.Parse(chatId) && (chat.compratore_id == sub || chat.venditore_id == sub));
@@ -448,7 +447,7 @@ public class ImagesController : ControllerBase
                 List<UserMessage> messages = new();
                 foreach(var file in files){
                     if(file.ContentType.Contains("image")){
-                        string imageName = _manager.encode(HmacHash(Guid.NewGuid())) + ".jpeg";       
+                        string imageName = _manager.Encode(HmacHash(Guid.NewGuid())) + ".jpeg";       
                         PutObjectRequest request = new()
                         {
                             BucketName = "Fuocherello-bucket",
@@ -485,6 +484,6 @@ public class ImagesController : ControllerBase
                 return NotFound("Dati forniti non validi");
             }
         }
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 }

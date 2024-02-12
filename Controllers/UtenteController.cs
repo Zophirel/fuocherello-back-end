@@ -2,11 +2,11 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Fuocherello.Data;
+using Fuocherello.Singleton.JwtManager;
 using Fuocherello.Models;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using NpgsqlTypes;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 namespace Fuocherello.Controllers;
@@ -18,14 +18,14 @@ public class UtenteController : ControllerBase
 {
     private readonly NpgsqlDataSource _conn;
     private readonly ApiServerContext _context;
-    private static JwtManager? _manager;
+    private readonly IJwtManager? _manager;
     private readonly IConfiguration _configuration;
     private readonly AmazonS3Client s3Client;
-    public UtenteController( NpgsqlDataSource conn, ApiServerContext context, RSA key, IConfiguration configuration)
+    public UtenteController( NpgsqlDataSource conn, ApiServerContext context,  IConfiguration configuration, IJwtManager manager)
     {
         _conn = conn;
         _context = context;
-        _manager = JwtManager.GetInstance(key);
+        _manager = manager;
         _configuration = configuration;
         string awsAccessKeyId = configuration.GetValue<string>("S3awsAccessKeyId")!;
         string awsSecretAccessKey = configuration.GetValue<string>("S3awsSecretAccessKey")!;
@@ -68,7 +68,7 @@ public class UtenteController : ControllerBase
     //return all the messages that a user couldn't receive while logged but disconnected from the signalr server
     public async Task<ActionResult> GetNotReceivedMessagges([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
-        if(isValid.statusCode == 200){
+        if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             string query =  
             $""" 
@@ -116,7 +116,7 @@ public class UtenteController : ControllerBase
             var json = JsonSerializer.Serialize(formattedData);
             return Ok(json);
         } 
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 
 
@@ -125,7 +125,7 @@ public class UtenteController : ControllerBase
     //get all the user chat messages 
     public async Task<ActionResult> GetMessaggi([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
-         if(isValid.statusCode == 200){
+         if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             string query =  
             $""" 
@@ -177,13 +177,13 @@ public class UtenteController : ControllerBase
                 return Ok(json);
             }
         } 
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 
     [HttpGet("chat")]
     public async Task<ActionResult> GetChats([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
-        if(isValid.statusCode == 200){
+        if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             string query =  
             $""" 
@@ -226,13 +226,13 @@ public class UtenteController : ControllerBase
 
             return Ok(json);
         }
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 
     [HttpGet("contatti")]
     public async Task<ActionResult> GetContacts([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
-         if(isValid.statusCode == 200){
+         if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             string query =  
             $""" 
@@ -269,13 +269,13 @@ public class UtenteController : ControllerBase
             var json = JsonSerializer.Serialize(formattedData);
             return Ok(json);
         }
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
     
     [HttpPut("info")]
     public async Task<ActionResult> PutUtenteInfo([FromHeader(Name = "Authentication")] string token, [FromForm] EditUtenteForm form, IFormFile? file){
         var isValid = _manager!.ValidateAccessToken(token);
-        if(isValid.statusCode == 200){
+        if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             
             Utente user =_context.utente.Single(user => user.hashed_id == sub);
@@ -313,7 +313,7 @@ public class UtenteController : ControllerBase
                 }
             }
         } 
-        return StatusCode(isValid.statusCode);
+        return StatusCode(isValid.StatusCode);
     }
 }
 
