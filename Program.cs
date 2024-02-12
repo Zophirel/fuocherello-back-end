@@ -7,7 +7,6 @@ using System.Security.Cryptography;
 using Fuocherello.Services.EmailService;
 using Npgsql;
 using Fuocherello.Singleton.JwtManager;
-using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 //DB connection
