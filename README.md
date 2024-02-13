@@ -5,7 +5,7 @@ This is a REST API server meant to be used by the Fuocherello Flutter App (Clien
 - [Overview](#overview)
 - [Features](#features)
 - [How to build](#how-to-build)
-- [Dependencies](#dependencies)
+- [Database](#database)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -133,6 +133,14 @@ once certbot is installed <br>
 ### 4. [assetlinks.json](https://github.com/Zophirel/fuocherello-back-end/blob/main/assetlinks.json "assetlinks.json") (optional)
 
 An example on how to edit this file for using your links can be found [Here](https://firebase.google.com/support/guides/app-links-universal-links#app-links "Here"), this wont be enough to make the App Links work, the client side needs to be modified too
+
+## Database
+The used DBMS is PostgreSQL
+<p>A database dump, can be found <a href="https://fuocherello-bucket.s3.cubbit.eu/db_dump%2Fdb.sql">Here</a></p>
+&nbsp;
+<img src="https://fuocherello-bucket.s3.cubbit.eu/svg%2FUntitled.svg"></img>
+&nbsp;
+<p align="center">Graphical rapresentation of the db made <a href="https://dbdiagram.io/d/65cb7605ac844320ae0c8696">with dbml</a></p>
 
 ## Contributing
 
