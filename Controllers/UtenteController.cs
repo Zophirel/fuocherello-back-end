@@ -44,7 +44,7 @@ public class UserController : ControllerBase
     [HttpGet("{id}")]
     public ActionResult GetUser(string id)
     {
-        var user = _context.User.SingleOrDefault(user => user.HashedId == id);
+        var user = _context.Users.SingleOrDefault(user => user.HashedId == id);
         Console.WriteLine($"USER == NULL : {user == null}");
         List<Dictionary<string, object>> formattedData = new();
 
@@ -277,7 +277,7 @@ public class UserController : ControllerBase
         if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             
-            User user =_context.User.Single(user => user.HashedId == sub);
+            User user =_context.Users.Single(user => user.HashedId == sub);
             user.Name = form.Name ?? user.Name;
             user.Surname = form.Surname ?? user.Surname;
             user.DateOfBirth = form.DateOfBirth ?? user.DateOfBirth;

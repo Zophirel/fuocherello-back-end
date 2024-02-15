@@ -22,7 +22,7 @@ public class LoginController : ControllerBase
     [HttpPost]
     public ActionResult PostLogin([FromBody] Login GuestUser){ 
         try{
-            var user = _context.User.FirstOrDefault(user => user.Email == GuestUser.Email);
+            var user = _context.Users.FirstOrDefault(user => user.Email == GuestUser.Email);
             
             if(user == null){
                 throw new Exception("Email non registrata");

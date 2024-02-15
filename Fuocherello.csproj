@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.203.4" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="EFCore.NamingConventions" Version="7.0.2" />
     <PackageReference Include="Google.Apis.Auth" Version="1.62.1" />
     <PackageReference Include="JWT" Version="10.0.1" />
     <PackageReference Include="JWT.Extensions.AspNetCore" Version="10.0.1" />

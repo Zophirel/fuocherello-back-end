@@ -46,6 +46,10 @@
               "target": "Package",
               "version": "[4.0.3, )"
             },
+            "EFCore.NamingConventions": {
+              "target": "Package",
+              "version": "[7.0.2, )"
+            },
             "Google.Apis.Auth": {
               "target": "Package",
               "version": "[1.62.1, )"

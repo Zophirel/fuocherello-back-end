@@ -608,3 +608,4 @@
 /home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/obj/Debug/net7.0/Fuocherello.csproj.CopyComplete
 /home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/obj/Debug/net7.0/Fuocherello.genruntimeconfig.cache
 /home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/obj/Debug/net7.0/ref/Fuocherello.dll
+/home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/bin/Debug/net7.0/EFCore.NamingConventions.dll

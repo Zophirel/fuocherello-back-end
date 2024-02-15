@@ -50,7 +50,7 @@ namespace Fuocherello.Controllers
                     {
                         return Forbid();
                     }else{
-                        User? user = _context.User.FirstOrDefault(user => user.HashedId == sub);
+                        User? user = _context.Users.FirstOrDefault(user => user.HashedId == sub);
                         if(user != null && !user.Verified){
                             _context.Attach(user);
                             user.Verified = true;

@@ -13,7 +13,7 @@ namespace Fuocherello.Data
             
         }
 
-        public DbSet<Models.User> User { get; set; } = default!;
+        public DbSet<Models.User> Users { get; set; } = default!;
     
         public DbSet<Models.Product> Product { get; set; } = default!;
 

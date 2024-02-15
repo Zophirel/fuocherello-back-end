@@ -48,7 +48,7 @@ public class ChangePassController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetChangePassTokenAsync([FromHeader] string emailTo){  
         try{
-            var user = _context.User.SingleOrDefault(user => user.Email == emailTo);
+            var user = _context.Users.SingleOrDefault(user => user.Email == emailTo);
             if(user is not null){
                 var id = user.HashedId;
                 await _SendEmail(id!.ToString(), emailTo);
@@ -71,7 +71,7 @@ public class ChangePassController : ControllerBase
 
         if(isValid!.StatusCode == 200){
             var UserId = _manager.ExtractSub(decodedToken);
-            User? user = _context.User.SingleOrDefault(user => user.HashedId == UserId);
+            User? user = _context.Users.SingleOrDefault(user => user.HashedId == UserId);
             if(user is not null){
                 var hashedPass = BCrypt.Net.BCrypt.HashPassword(password);
                 user.Password = hashedPass;

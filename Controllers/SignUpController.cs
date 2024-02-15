@@ -106,7 +106,7 @@ public class SignUpController : ControllerBase
 
         Console.WriteLine($"PAYLOAD NULL {payload is not null}");
         if(payload != null){
-            User? user = _context.User.SingleOrDefault(user => user.HashedId == HmacHash(payload.Subject));
+            User? user = _context.Users.SingleOrDefault(user => user.HashedId == HmacHash(payload.Subject));
             if(user is not null){     
                 Console.WriteLine("UTENTE ESISTE");     
                 return Ok($"{_manager.GenIdToken(user)}@{_manager.GenAccessToken(user.HashedId!)}@{_manager.GenRefreshToken(user.HashedId!)}");
@@ -125,7 +125,7 @@ public class SignUpController : ControllerBase
     public async Task<IActionResult> OuathSignup([FromBody] GoogleUser user, [FromHeader(Name = "Authentication")] string token){
         var isValid = _manager.ValidateGoogleSignUpToken(token);
         if(isValid.StatusCode == 200){
-            User? registeredUser = _context.User.SingleOrDefault(u => u.HashedId == HmacHash(user.Sub!));
+            User? registeredUser = _context.Users.SingleOrDefault(u => u.HashedId == HmacHash(user.Sub!));
             if(registeredUser is not null){
                 return BadRequest("User gia' presente");
             }else{
@@ -156,7 +156,7 @@ public class SignUpController : ControllerBase
     public async Task<IActionResult> PostSignup([FromBody] UserDTO GuestUser)
     {
         try{
-            var user = _context.User.FirstOrDefault(user => user.Email == GuestUser.Email);
+            var user = _context.Users.FirstOrDefault(user => user.Email == GuestUser.Email);
             if(user == null){
                 Guid id = Guid.NewGuid();
                 string HashedId = HmacHash(id.ToString());
@@ -167,7 +167,7 @@ public class SignUpController : ControllerBase
                     newUser = newUser.FomUserDTO(GuestUser) ?? throw new DataNotValid("dati user errati");
                     newUser.Id = id;
                     newUser.HashedId = HashedId;                
-                    _context.User.Add(newUser);
+                    _context.Users.Add(newUser);
                     await _context.SaveChangesAsync();
                     return Ok("Nuovo Privato inserito!");
                 }else{

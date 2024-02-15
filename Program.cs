@@ -12,7 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 //DB connection
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 string ConnString = builder.Configuration.GetConnectionString("DbContext")!;
-builder.Services.AddDbContext<ApiServerContext>(options => options.UseNpgsql(ConnString));
+builder.Services.AddDbContext<ApiServerContext>(options => {
+    options.UseNpgsql(ConnString).UseSnakeCaseNamingConvention();
+});
 await using var dataSource = NpgsqlDataSource.Create(ConnString);
 builder.Services.AddSingleton(dataSource);
 
