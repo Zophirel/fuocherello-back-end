@@ -14,21 +14,21 @@ namespace Fuocherello.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 
-public class UtenteController : ControllerBase
+public class UserController : ControllerBase
 {
     private readonly NpgsqlDataSource _conn;
     private readonly ApiServerContext _context;
     private readonly IJwtManager? _manager;
     private readonly IConfiguration _configuration;
     private readonly AmazonS3Client s3Client;
-    public UtenteController( NpgsqlDataSource conn, ApiServerContext context,  IConfiguration configuration, IJwtManager manager)
+    public UserController( NpgsqlDataSource conn, ApiServerContext context,  IConfiguration configuration, IJwtManager manager)
     {
         _conn = conn;
         _context = context;
         _manager = manager;
         _configuration = configuration;
-        string awsAccessKeyId = configuration.GetValue<string>("S3awsAccessKeyId")!;
-        string awsSecretAccessKey = configuration.GetValue<string>("S3awsSecretAccessKey")!;
+        string awsAccessKeyId = _configuration.GetValue<string>("S3awsAccessKeyId")!;
+        string awsSecretAccessKey = _configuration.GetValue<string>("S3awsSecretAccessKey")!;
         AmazonS3Config config = new()
         {
             ServiceURL = "https://s3.cubbit.eu",
@@ -40,11 +40,11 @@ public class UtenteController : ControllerBase
     }
 
 
-    // GET: api/Fuocherello.Models.Utente/5
+    // GET: api/Fuocherello.Models.User/5
     [HttpGet("{id}")]
-    public ActionResult GetUtente(string id)
+    public ActionResult GetUser(string id)
     {
-        var user = _context.utente.SingleOrDefault(user => user.hashed_id == id);
+        var user = _context.User.SingleOrDefault(user => user.HashedId == id);
         Console.WriteLine($"USER == NULL : {user == null}");
         List<Dictionary<string, object>> formattedData = new();
 
@@ -52,12 +52,12 @@ public class UtenteController : ControllerBase
         {
             Dictionary<string, object> data = new()
             {
-                { "id", user.hashed_id! },
-                { "nome", user.nome! },
-                { "cognome", user.cognome! },
-                { "propic", user.propic == "" ? false : true }
+                { "id", user.HashedId! },
+                { "nome", user.Name! },
+                { "cognome", user.Surname! },
+                { "propic", user.Propic == "" ? false : true }
             };
-            //data.Add("chat_pub_key", _context.utente_keys.Single( key => key.user_id == user.hashed_id)!.public_key);
+            
             formattedData.Add(data);
         }
         var json = JsonSerializer.Serialize(formattedData);
@@ -73,22 +73,22 @@ public class UtenteController : ControllerBase
             string query =  
             $""" 
             WITH updated_messages AS (
-                UPDATE public.messaggio AS msg
+                UPDATE public.message AS msg
                 SET delivered = true
                 FROM (
-                    SELECT id AS chat_id, compratore_id, venditore_id
-                    FROM public.lista_chat
-                    WHERE compratore_id = @id OR venditore_id = @id
+                    SELECT id AS chat_id, buyer_id, seller_id
+                    FROM public.chat_list
+                    WHERE buyer_id = @id OR seller_id = @id
                 ) AS chat
                 WHERE msg.chat_id = chat.chat_id
                 AND msg.delivered = false 
-                AND msg.mandante_id != @id
+                AND msg.sender_id != @id
                 RETURNING
                     msg.id,
                     msg.chat_id,
-                    msg.mandante_id,
+                    msg.sender_id,
                     msg.prod_id,
-                    msg.messaggio,
+                    msg.message,
                     msg.sent_at,
                     msg.delivered
             )
@@ -132,20 +132,20 @@ public class UtenteController : ControllerBase
             SELECT
                 msg.id,
                 msg.chat_id,
-                msg.mandante_id,
+                msg.sender_id,
                 CASE 
-                    WHEN msg.mandante_id = chat.compratore_id THEN chat.venditore_id
-                    ELSE chat.compratore_id
-                END AS ricevente_id,
-                msg.messaggio,
+                    WHEN msg.sender_id = chat.buyer_id THEN chat.seller_id
+                    ELSE chat.buyer_id
+                END AS receiver_id,
+                msg.message,
                 msg.sent_at,
                 msg.delivered
-            FROM public.messaggio AS msg
+            FROM public.message AS msg
             JOIN (
-                SELECT id AS chat_id, compratore_id, venditore_id
-                FROM public.lista_chat
-                WHERE compratore_id = @id
-                OR venditore_id = @id
+                SELECT id AS chat_id, buyer_id, seller_id
+                FROM public.chat_list
+                WHERE buyer_id = @id
+                OR seller_id = @id
             ) AS chat ON msg.chat_id = chat.chat_id;
             """; 
 
@@ -189,19 +189,19 @@ public class UtenteController : ControllerBase
             $""" 
             SELECT
                 CASE
-                    WHEN compratore_id = @id THEN venditore.hashed_id
-                    ELSE compratore.hashed_id
-                END AS utente_hashed_id,
-                prodotto.titolo, 
-                prodotto.id AS prod_id,
+                    WHEN buyer_id = @id THEN seller.hashed_id
+                    ELSE buyer.hashed_id
+                END AS user_hashed_id,
+                product.title, 
+                product.id AS prod_id,
                 chat.id AS chat_id,
-                prodotto.immagini_prodotto
+                product.product_images
                 
-            FROM public.lista_chat AS chat
-            JOIN public.prodotto AS prodotto ON chat.prod_id = prodotto.id
-            LEFT JOIN public.utente AS compratore ON chat.compratore_id = compratore.hashed_id
-            LEFT JOIN public.utente AS venditore ON chat.venditore_id = venditore.hashed_id
-            WHERE chat.compratore_id = @id OR chat.venditore_id = @id;
+            FROM public.chat_list AS chat
+            JOIN public.product AS product ON chat.prod_id = product.id
+            LEFT JOIN public.users AS buyer ON chat.buyer_id = buyer.hashed_id
+            LEFT JOIN public.users AS seller ON chat.seller_id = seller.hashed_id
+            WHERE chat.buyer_id = @id OR chat.seller_id = @id;
             """; 
 
             await using var getContactQuery = _conn.CreateCommand(query);
@@ -238,18 +238,17 @@ public class UtenteController : ControllerBase
             $""" 
                 SELECT DISTINCT
                     CASE
-                        WHEN compratore.hashed_id = @id THEN venditore.hashed_id
-                        ELSE compratore.hashed_id
-                    END AS utente_hashed_id,
+                        WHEN buyer.hashed_id = @id THEN seller.hashed_id
+                        ELSE buyer.hashed_id
+                    END AS user_hashed_id,
                     CASE
-                        WHEN compratore.hashed_id = @id THEN venditore.nome
-                        ELSE compratore.nome
-                    END AS utente_nome
-                FROM public.lista_chat AS chat
-                LEFT JOIN public.utente AS compratore ON chat.compratore_id = compratore.hashed_id
-                LEFT JOIN public.utente AS venditore ON chat.venditore_id = venditore.hashed_id
-                WHERE chat.compratore_id = @id OR chat.venditore_id = @id;
-
+                        WHEN buyer.hashed_id = @id THEN seller.name
+                        ELSE buyer.name
+                    END AS user_name
+                FROM public.chat_list AS chat
+                LEFT JOIN public.users AS buyer ON chat.buyer_id = buyer.hashed_id
+                LEFT JOIN public.users AS seller ON chat.seller_id = seller.hashed_id
+                WHERE chat.buyer_id = @id OR chat.seller_id = @id;
             """; 
 
             await using var getContactQuery = _conn.CreateCommand(query);
@@ -273,18 +272,18 @@ public class UtenteController : ControllerBase
     }
     
     [HttpPut("info")]
-    public async Task<ActionResult> PutUtenteInfo([FromHeader(Name = "Authentication")] string token, [FromForm] EditUtenteForm form, IFormFile? file){
+    public async Task<ActionResult> PutUserInfo([FromHeader(Name = "Authentication")] string token, [FromForm] EditUserForm form, IFormFile? file){
         var isValid = _manager!.ValidateAccessToken(token);
         if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
             
-            Utente user =_context.utente.Single(user => user.hashed_id == sub);
-            user.nome = form.Nome ?? user.nome;
-            user.cognome = form.Cognome ?? user.cognome;
-            user.data_nascita = form.DataDiNascita ?? user.data_nascita;
-            user.comune = form.Comune ?? user.comune;  
+            User user =_context.User.Single(user => user.HashedId == sub);
+            user.Name = form.Name ?? user.Name;
+            user.Surname = form.Surname ?? user.Surname;
+            user.DateOfBirth = form.DateOfBirth ?? user.DateOfBirth;
+            user.City = form.City ?? user.City;  
 
-            Console.WriteLine($"{user.nome} - {user.cognome} - {user.data_nascita} {user.comune}");      
+            Console.WriteLine($"{user.Name} - {user.Surname} - {user.DateOfBirth} {user.City}");      
             if(file == null){
                 _context.SaveChanges();
                 return Ok();
@@ -293,7 +292,7 @@ public class UtenteController : ControllerBase
                 var imgPath = $"profiles/{sub}/{filename}";
                 PutObjectRequest request = new()
                 {
-                    BucketName = "Fuocherello-bucket",
+                    BucketName = "fuocherello-bucket",
                     Key = imgPath,
                     InputStream = file.OpenReadStream(),
                     ContentType = file.ContentType,
@@ -304,7 +303,7 @@ public class UtenteController : ControllerBase
                     // upload image to cloud
                     PutObjectResponse response = await s3Client.PutObjectAsync(request);
                     if(response.HttpStatusCode == System.Net.HttpStatusCode.Accepted){
-                        user.propic = $"https://Fuocherello-bucket.s3.cubbit.eu/profiles/{sub}/{sub}.jpeg";
+                        user.Propic = $"https://fuocherello-bucket.s3.cubbit.eu/profiles/{sub}/{sub}.jpeg";
                         _context.SaveChanges();
                         return Ok();
                     }

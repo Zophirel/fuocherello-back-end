@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/fra/Desktop/fuocherello/github_cloned_repo/fuocherello-back-end/Fuocherello.csproj": {}
+    "/home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/Fuocherello.csproj": {}
   },
   "projects": {
-    "/home/fra/Desktop/fuocherello/github_cloned_repo/fuocherello-back-end/Fuocherello.csproj": {
+    "/home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/Fuocherello.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/fra/Desktop/fuocherello/github_cloned_repo/fuocherello-back-end/Fuocherello.csproj",
+        "projectUniqueName": "/home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/Fuocherello.csproj",
         "projectName": "Fuocherello",
-        "projectPath": "/home/fra/Desktop/fuocherello/github_cloned_repo/fuocherello-back-end/Fuocherello.csproj",
+        "projectPath": "/home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/Fuocherello.csproj",
         "packagesPath": "/home/fra/.nuget/packages/",
-        "outputPath": "/home/fra/Desktop/fuocherello/github_cloned_repo/fuocherello-back-end/obj/",
+        "outputPath": "/home/fra/Desktop/fuocherello/github_cloned_repo/backup/fuocherello-back-end/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/fra/.nuget/NuGet/NuGet.Config"

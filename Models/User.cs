@@ -3,13 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace Fuocherello.Models
 {
-    public class Utente
+    //is not 'User' cause PostgreSql use User as keyword 
+    public class User
     {
-        public Utente(){
+        public User(){
             
         }
 
-        static bool CheckIfElementExist(DateTime? element){
+        private static bool CheckIfElementExist(DateTime? element){
             if(element != null){
                 if(element.Value.Year < DateTime.Now.Year - 13){
                     return true;
@@ -18,7 +19,7 @@ namespace Fuocherello.Models
             return false;
         }
 
-        static bool ValidatePassword(string? value)
+        private static bool ValidatePassword(string? value)
         {
             Regex regex = new Regex(@"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$");
             if (value == null)
@@ -33,7 +34,7 @@ namespace Fuocherello.Models
             }
         }
 
-        static bool checkIfNameExist(string? element){
+        private static bool CheckIfNameExist(string? element){
             if(element != null){
                 if(element != "" && element.Length < 15){
                     return true;
@@ -42,14 +43,14 @@ namespace Fuocherello.Models
             return false;
         }
 
-        static bool checkIfElementExist(string? element){
+        private static bool CheckIfElementExist(string? element){
             if(element != null && element != ""){
                 return true;      
             }
             return false;
         }
 
-        static string? _fixNameString(string name)
+        private static string? FixNameString(string name)
         {
             string restOfTheName = "";
             if(!char.IsUpper(name[0])){
@@ -62,45 +63,45 @@ namespace Fuocherello.Models
         }
 
 
-        public Utente? fromUserDto(UtenteDto newUser){
+        public User? FomUserDTO(UserDTO user){
             try{   
-                if(!checkIfNameExist(newUser.nome)){
+                if(!CheckIfNameExist(user.Name)){
                     throw new Exception("Nome non presente");
                 }else{
-                    nome = _fixNameString(newUser.nome!);
+                    Name = FixNameString(user.Name!);
                 }
 
-                if(!checkIfNameExist(newUser.cognome)){
+                if(!CheckIfNameExist(user.Surname)){
                     throw new Exception("Cognome non presente");
                 }else{
-                    cognome = _fixNameString(newUser.cognome!);
+                    Surname = FixNameString(user.Surname!);
                 }
                 
-                if(!CheckIfElementExist(newUser.data_nascita)){
+                if(!CheckIfElementExist(user.DateOfBirth)){
                     throw new Exception("Data di nascita errata");
                 }else{
-                    data_nascita = newUser.data_nascita;
+                    DateOfBirth = user.DateOfBirth;
                 }
 
-                if(!checkIfElementExist(newUser.comune)){
+                if(!CheckIfElementExist(user.City)){
                     throw new Exception("Comune non presente");
                 }else{
-                    comune = newUser.comune;
+                    City = user.City;
                 }
 
-                if(!checkIfElementExist(newUser.email)){
+                if(!CheckIfElementExist(user.Email)){
                     throw new Exception("Email non presente");
                 }else{
-                    email = newUser.email;
+                    Email = user.Email;
                 }
 
-                if(!ValidatePassword(newUser.password)){
+                if(!ValidatePassword(user.Password)){
                     throw new Exception("Password earrata o non presente");
                 }else{
-                    password = BCrypt.Net.BCrypt.HashPassword(newUser.password!);
+                    Password = BCrypt.Net.BCrypt.HashPassword(user.Password!);
                 }
-                created_at = DateTime.Now;
-                verified = false;
+                CreatedAt = DateTime.Now;
+                Verified = false;
                 return this;
             }catch (Exception e)
             {
@@ -110,16 +111,16 @@ namespace Fuocherello.Models
         }
 
         [Key]
-        public Guid? id { get; set; }
-        public string? nome { get; set; }
-        public string? cognome { get; set; }
-        public string? comune { get; set; }
-        public string? email { get; set; }
-        public string? password { get; set; }
-        public DateTime? data_nascita { get; set; }
-        public DateTime? created_at {get; set; }
-        public bool verified {get; set;}
-        public string? hashed_id { get; set; }
-        public string? propic { get; set; } = "";  
+        public Guid? Id { get; set; }
+        public string? Name { get; set; }
+        public string? Surname { get; set; }
+        public string? City { get; set; }
+        public string? Email { get; set; }
+        public string? Password { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public DateTime? CreatedAt {get; set; }
+        public bool Verified {get; set;}
+        public string? HashedId { get; set; }
+        public string? Propic { get; set; } = "";  
     }
 }

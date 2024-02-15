@@ -24,6 +24,7 @@ public class ImagesController : ControllerBase
     private readonly IAmazonS3 s3Client;
     private readonly HubConnection signalRClient;
 
+
     public ImagesController(NpgsqlDataSource conn, ApiServerContext context, IConfiguration configuration, IJwtManager manager)
     {
         this.conn = conn;
@@ -48,14 +49,14 @@ public class ImagesController : ControllerBase
 
     [HttpGet("ProdottoImages/{ProdId}")]
     public IActionResult GetProductImage(Guid ProdId){  
-        Prodotto?prod =_context.prodotto.FirstOrDefault(prod => prod.id == ProdId);
+        Product? prod =_context.Product.FirstOrDefault(prod => prod.Id == ProdId);
         if(prod != null){
-            if(prod.immagini_prodotto == null){
+            if(prod.ProductImages == null){
                 return NoContent();    
             }
             List<string> s3imgsUrl = new();
-            foreach(string filename in prod.immagini_prodotto){
-                s3imgsUrl.Add($"https://Fuocherello-bucket.s3.cubbit.eu/products/{prod.autore}/{prod.id}/{filename}");
+            foreach(string filename in prod.ProductImages){
+                s3imgsUrl.Add($"https://fuocherello-bucket.s3.cubbit.eu/products/{prod.Author}/{prod.Id}/{filename}");
             }
             return Ok(s3imgsUrl);
         }else{
@@ -65,12 +66,12 @@ public class ImagesController : ControllerBase
 
     [HttpGet("ProdottoThumbnail/{ProdId}")]
     public IActionResult GetProductThumbnailUrlFromBucket(Guid ProdId){
-        Prodotto?prod =_context.prodotto.FirstOrDefault(prod => prod.id == ProdId);
+        Product? prod =_context.Product.FirstOrDefault(prod => prod.Id == ProdId);
         if(prod != null){
-            if(prod.immagini_prodotto == null){
+            if(prod.ProductImages == null){
                 return NoContent();    
             }
-            return Ok($"https://Fuocherello-bucket.s3.cubbit.eu/products/{prod.autore}/{prod.id}/{prod.immagini_prodotto[0]}");
+            return Ok($"https://fuocherello-bucket.s3.cubbit.eu/products/{prod.Author}/{prod.Id}/{prod.ProductImages[0]}");
         }else{
             return NotFound();
         }  
@@ -96,14 +97,14 @@ public class ImagesController : ControllerBase
     }
 
     //upload images remotely using aws s3 api and cubbit as endpoint
-    [HttpPost("Prodotto")]
-    public async Task<ActionResult<Prodotto>> PostProdottoImagesToBucket([FromForm] List<IFormFile> files, [FromHeader(Name = "Authentication")] string token)
+    [HttpPost("Product")]
+    public async Task<ActionResult<Product>> PostProdottoImagesToBucket([FromForm] List<IFormFile> files, [FromHeader(Name = "Authentication")] string token)
     {
         var isValid = _manager.ValidateAccessToken(token);
          if(isValid.StatusCode == 200){
             //Get the product 
             string sub = _manager.ExtractSub(token)!;
-            Prodotto? prod = _context.prodotto.Where(prod => prod.autore == sub).OrderBy(prod => prod.created_at).Last();                
+            Product? prod = _context.Product.Where(prod => prod.Author == sub).OrderBy(prod => prod.CreatedAt).Last();                
             if(prod != null){
                 //Get the uploaded images names (only 5 images per post are allowed)
                 int numberOfNewFiles = files.Count;
@@ -112,10 +113,10 @@ public class ImagesController : ControllerBase
                 foreach (var file in files.GetRange(0, rangeToSelect))
                 {
                     var filename = _manager.Encode(HmacHash(Guid.NewGuid()))+".jpeg";
-                    var imgPath = $"products/{sub}/{prod.id}/{filename}";
+                    var imgPath = $"products/{sub}/{prod.Id}/{filename}";
                     PutObjectRequest request = new()
                     {
-                        BucketName = "Fuocherello-bucket",
+                        BucketName = "fuocherello-bucket",
                         Key = imgPath,
                         InputStream = file.OpenReadStream(),
                         ContentType = file.ContentType,
@@ -131,25 +132,25 @@ public class ImagesController : ControllerBase
                         Console.WriteLine($"Error: '{ex.Message}' when writing an object");  
                     }
                 }
-                await UploadImageNameToDb(uploadedFileName, sub, prod.id);
+                await UploadImageNameToDb(uploadedFileName, sub, prod.Id);
                 //removeOldFiles(uploadedFiles, sub, prod.id);
                 return Ok();
             }else{
-                return BadRequest("Prodotto non valido");
+                return BadRequest("Product non valido");
             }
         }
         return StatusCode(isValid.StatusCode);
     }
 
     
-    private async Task UploadImageNameToDb(List<string> immaginiProdotto, string sub, Guid? prodId){
+    private async Task UploadImageNameToDb(List<string> ProductImages, string sub, Guid? prodId){
         const string updateQuery = 
         """
-            UPDATE prodotto SET immagini_prodotto = @lista_immagini WHERE id = @prod_id;
+            UPDATE product SET product_images = @product_images WHERE id = @prod_id;
         """;
         await using var command = conn.CreateCommand(updateQuery);
         command.Parameters.Add("@prod_id", NpgsqlDbType.Uuid).Value = prodId;
-        command.Parameters.Add("@lista_immagini", NpgsqlDbType.Array | NpgsqlDbType.Text).Value = immaginiProdotto;
+        command.Parameters.Add("@product_images", NpgsqlDbType.Array | NpgsqlDbType.Text).Value = ProductImages;
 
         await command.ExecuteNonQueryAsync();
     }
@@ -190,7 +191,7 @@ public class ImagesController : ControllerBase
             var imgPath = $"products/{sub}/{prodId}/{imagesToDelete[i]}";
             DeleteObjectRequest request = new()
             {
-                BucketName = "Fuocherello-bucket",
+                BucketName = "fuocherello-bucket",
                 Key = imgPath,
             };
             try{
@@ -207,7 +208,7 @@ public class ImagesController : ControllerBase
                 var imgPath = $"products/{sub}/{prodId}/{fileNamesToUpload[i]}";
                 PutObjectRequest request = new()
                 {
-                    BucketName = "Fuocherello-bucket",
+                    BucketName = "fuocherello-bucket",
                     Key = imgPath,
                     InputStream = files[i].OpenReadStream(),
                     ContentType = files[i].ContentType,
@@ -225,9 +226,9 @@ public class ImagesController : ControllerBase
         await UploadImageNameToDb(fileNamesToUpload, sub, Guid.Parse(prodId)); 
     } 
     
-    [HttpPut("Prodotto/{id}")]
+    [HttpPut("Product/{id}")]
     //edit product images after the product has been published
-    public async Task<ActionResult<Prodotto>> PutProdottoImagesToBucket([FromForm] List<IFormFile> files, [FromHeader(Name = "Authentication")] string token, Guid id)
+    public async Task<ActionResult<Product>> PutProdottoImagesToBucket([FromForm] List<IFormFile> files, [FromHeader(Name = "Authentication")] string token, Guid id)
     {
         try
         {  
@@ -237,14 +238,14 @@ public class ImagesController : ControllerBase
             if(isValid.StatusCode == 200){
                 //check if product exists
                 string sub = _manager.ExtractSub(token)!;
-                Prodotto?prod =_context.prodotto.FirstOrDefault(prod => prod.autore == sub && prod.id == id);    
+                Product?prod =_context.Product.FirstOrDefault(prod => prod.Author == sub && prod.Id == id);    
                 if(prod != null){
                     //Get old images filenames from bucket
                     ListObjectsV2Request listOldFilesRequest = new()
                     {                            
-                        BucketName = "Fuocherello-bucket",
-                        Prefix = $"products/{sub}/{prod!.id}",
-                        StartAfter = $"products/{sub}/{prod.id}"
+                        BucketName = "fuocherello-bucket",
+                        Prefix = $"products/{sub}/{prod!.Id}",
+                        StartAfter = $"products/{sub}/{prod.Id}"
                     }; 
                     
                     ListObjectsV2Response oldFiles = await s3Client.ListObjectsV2Async(listOldFilesRequest);
@@ -262,7 +263,7 @@ public class ImagesController : ControllerBase
                         for(int i = 0; i < numberOfNewFiles && i < 5; i++){    
                             newFileNames.Add($"{_manager.Encode(HmacHash(Guid.NewGuid()))}.jpeg");
                         }
-                        await PostProductImagesToBucket(sub, prod.id.ToString()!, newFileNames, files);
+                        await PostProductImagesToBucket(sub, prod.Id.ToString()!, newFileNames, files);
                         return Ok();
                     }
 
@@ -274,16 +275,16 @@ public class ImagesController : ControllerBase
                         numberOfNewFiles = newFileName.Count;
                     }else if(numberOfNewFiles == 0){
                        
-                        await DeleteProductImagesFromBucket(sub, prod.id.ToString()!, oldFileName);
-                        await UploadImageNameToDb(newFileName, sub, prod.id);
+                        await DeleteProductImagesFromBucket(sub, prod.Id.ToString()!, oldFileName);
+                        await UploadImageNameToDb(newFileName, sub, prod.Id);
                         return Ok();
                     }
 
                     List<string> imagesToDelete = GetImagesToDelete(oldFileName, newFileName);
-                    await DeleteProductImagesFromBucket(sub, prod.id.ToString()!, imagesToDelete);
+                    await DeleteProductImagesFromBucket(sub, prod.Id.ToString()!, imagesToDelete);
                 
                     List<string> fileNamesToUpload = GetImagesToUpload(imagesToDelete, oldFileName, newFileName);
-                    await PostProductImagesToBucket(sub, prod.id.ToString()!, fileNamesToUpload, files);                  
+                    await PostProductImagesToBucket(sub, prod.Id.ToString()!, fileNamesToUpload, files);                  
                     return Ok();
 
                 }else{ 
@@ -301,7 +302,7 @@ public class ImagesController : ControllerBase
         }
     }
 
-    [HttpDelete("Prodotto/{id}")]
+    [HttpDelete("Product/{id}")]
     public async Task<IActionResult> DeletePordottoImagesFromBcuket([FromHeader(Name = "Authentication")] string token, Guid id){
         try
         {       
@@ -309,14 +310,14 @@ public class ImagesController : ControllerBase
             if(isValid.StatusCode == 200){
                 //check if product exists
                 string sub = _manager.ExtractSub(token)!;
-                Prodotto?prod =_context.prodotto.FirstOrDefault(prod => prod.autore == sub && prod.id == id);    
+                Product?prod =_context.Product.FirstOrDefault(prod => prod.Author == sub && prod.Id == id);    
                 if(prod != null){
                     //Get old images filenames from bucket
                     ListObjectsV2Request listOldFilesRequest = new()
                     {                            
-                        BucketName = "Fuocherello-bucket",
-                        Prefix = $"products/{sub}/{prod!.id}",
-                        StartAfter = $"products/{sub}/{prod.id}"
+                        BucketName = "fuocherello-bucket",
+                        Prefix = $"products/{sub}/{prod!.Id}",
+                        StartAfter = $"products/{sub}/{prod.Id}"
                     }; 
                     
                     ListObjectsV2Response oldFiles = await s3Client.ListObjectsV2Async(listOldFilesRequest);
@@ -325,7 +326,7 @@ public class ImagesController : ControllerBase
                     
                     if(numberOfOldFiles > 0){
                         oldFileName = oldFiles.S3Objects.Select(file => ExtractImageNameFromPath(file.Key)).ToList();
-                        await DeleteProductImagesFromBucket(sub, prod.id.ToString()!, oldFileName);
+                        await DeleteProductImagesFromBucket(sub, prod.Id.ToString()!, oldFileName);
                     }else if(numberOfOldFiles == 0){
                         return Ok();
                     }
@@ -346,7 +347,7 @@ public class ImagesController : ControllerBase
 
     [HttpPut("Propic")]
     //edit product images after the product has been published
-    public async Task<ActionResult<Prodotto>> PutUserProfilePicToBucket(IFormFile uploadedFile, [FromHeader(Name = "Authentication")] string token)
+    public async Task<ActionResult<Product>> PutUserProfilePicToBucket(IFormFile uploadedFile, [FromHeader(Name = "Authentication")] string token)
     {
         try
         {  
@@ -359,7 +360,7 @@ public class ImagesController : ControllerBase
                     //Get old images filenames from bucket
                     ListObjectsV2Request listOldFilesRequest = new()
                     {                            
-                        BucketName = "Fuocherello-bucket",
+                        BucketName = "fuocherello-bucket",
                         Prefix = $"profiles/{sub}",
                         StartAfter = $"profiles/{sub}"
                     }; 
@@ -371,7 +372,7 @@ public class ImagesController : ControllerBase
                             string propicName = sub + ".jpeg";       
                             PutObjectRequest request = new()
                             {
-                                BucketName = "Fuocherello-bucket",
+                                BucketName = "fuocherello-bucket",
                                 Key = $"profiles/{sub}/{propicName}",
                                 InputStream = uploadedFile.OpenReadStream(),
                                 ContentType = uploadedFile.ContentType,
@@ -383,7 +384,7 @@ public class ImagesController : ControllerBase
                             string propicName = ExtractImageNameFromPath(oldPropic.S3Objects[0].Key);
                             PutObjectRequest request = new()
                             {
-                                BucketName = "Fuocherello-bucket",
+                                BucketName = "fuocherello-bucket",
                                 Key = $"profiles/{sub}/{propicName}",
                                 InputStream = uploadedFile.OpenReadStream(),
                                 ContentType = uploadedFile.ContentType,
@@ -397,7 +398,7 @@ public class ImagesController : ControllerBase
                     }  
                     return Ok();
                 }else{ 
-                    return NotFound("Prodotto non trovato");
+                    return NotFound("Product non trovato");
                 }
             }
             return StatusCode(isValid.StatusCode);
@@ -421,7 +422,7 @@ public class ImagesController : ControllerBase
                 
                 DeleteObjectRequest request = new()
                 {
-                    BucketName = "Fuocherello-bucket",
+                    BucketName = "fuocherello-bucket",
                     Key = $"products/{sub}/",
                 };
                 await s3Client.DeleteObjectAsync(request);
@@ -433,14 +434,13 @@ public class ImagesController : ControllerBase
         return StatusCode(isValid.StatusCode); 
     }
 
-    
-    [HttpPut("Chat")]
+  [HttpPut("Chat")]
     public async Task<IActionResult> PutChatPicToBucket([FromForm(Name = "files")] List<IFormFile> files, [FromForm] string chatId, [FromHeader(Name = "Authentication")] string token){
         MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
         if(isValid.StatusCode == 200){
             //check if the chat exists and if the user partecipate in the chat
             string? sub = _manager.ExtractSub(token);
-            ChatList? chat = _context.lista_chat.SingleOrDefault(chat => chat.id == Guid.Parse(chatId) && (chat.compratore_id == sub || chat.venditore_id == sub));
+            ChatList? chat = _context.ChatList.SingleOrDefault(chat => chat.Id == Guid.Parse(chatId) && (chat.BuyerId == sub || chat.SellerId == sub));
             
             if(sub != null && chat != null){
                 List<string> imgurls = new();
@@ -450,24 +450,27 @@ public class ImagesController : ControllerBase
                         string imageName = _manager.Encode(HmacHash(Guid.NewGuid())) + ".jpeg";       
                         PutObjectRequest request = new()
                         {
-                            BucketName = "Fuocherello-bucket",
+                            BucketName = "fuocherello-bucket",
                             Key = $"chats/{chatId}/{imageName}",
                             InputStream = file.OpenReadStream(),
                             ContentType = file.ContentType,
                             UseChunkEncoding = false,
                             CannedACL = S3CannedACL.PublicRead
                         };
-                        imgurls.Add($"https://Fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}");
-                        UserMessage message = new();
-                        message.id = Guid.NewGuid();
-                        message.chat_id = Guid.Parse(chatId);
-                        message.mandante_id = sub;
-                        message.prod_id = chat.prod_id;
-                        message.messaggio = $"https://Fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}";
-                        message.delivered = false;
-                        message.sent_at = ((ulong)((DateTimeOffset) DateTime.Now).ToUnixTimeMilliseconds());
-                        messages.Add(message);
-                        await _context.messaggio.AddAsync(message);
+                        imgurls.Add($"https://fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}");
+                        UserMessage data = new()
+                        {
+                            Id = Guid.NewGuid(),
+                            ChatId = Guid.Parse(chatId),
+                            SenderId = sub,
+                            ProdId = chat.ProdId,
+                            Message = $"https://fuocherello-bucket.s3.cubbit.eu/chats/{chatId}/{imageName}",
+                            Delivered = false,
+                            SentAt = (ulong)((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds()
+                        };
+                        
+                        messages.Add(data);
+                        await _context.Message.AddAsync(data);
                         await _context.SaveChangesAsync();
                         //send the image to the s3 storage
                         await s3Client.PutObjectAsync(request);
@@ -476,7 +479,7 @@ public class ImagesController : ControllerBase
                     }                 
                 }
                 await signalRClient.StartAsync();
-                var receiver = sub == chat.compratore_id ? chat.venditore_id : chat.compratore_id;
+                var receiver = sub == chat.BuyerId ? chat.SellerId : chat.BuyerId;
                 await signalRClient.InvokeAsync("SendImageToClient", _configuration.GetValue<string>("SignalRServerPassword")!, receiver!, JsonSerializer.Serialize(messages));
                 
                 return Ok(JsonSerializer.Serialize(messages));
@@ -486,4 +489,6 @@ public class ImagesController : ControllerBase
         }
         return StatusCode(isValid.StatusCode);
     }
+
+
 }

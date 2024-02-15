@@ -4,30 +4,26 @@ using Fuocherello.Data;
 using Npgsql;
 using Fuocherello.Services.EmailService;
 using System.Text;
-using System.Security.Cryptography;
 using Google.Apis.Auth;
+using System.Security.Cryptography;
+using Fuocherello.Singleton.JwtManager;
 
 namespace Fuocherello.Controllers;
 
 [ApiController]
-[Route("/signup/privato")]
+[Route("api/[controller]")]
 
 public class SignUpController : ControllerBase
 {
-    static readonly char[] padding = { '=' };
-    private readonly NpgsqlDataSource _conn;
+    private static readonly char[] padding = { '=' };
     private readonly ApiServerContext _context;
     private readonly IConfiguration _configuration;
-    private readonly RSA _rsa;
-    private readonly JwtManager  _manager;
-    public SignUpController(ApiServerContext context, NpgsqlDataSource conn, IConfiguration configuration, RSA rsa)
+    private readonly IJwtManager  _manager;
+    public SignUpController(ApiServerContext context, IConfiguration configuration, IJwtManager manager)
     {
         _context = context;
-        _conn = conn;
         _configuration = configuration;
-        _rsa = rsa;
-        _manager = JwtManager.GetInstance(_rsa);
-
+        _manager = manager;
     }
 
     //GET per eseguire il lancio in app tramite deeplink 
@@ -49,27 +45,25 @@ public class SignUpController : ControllerBase
         if(secretKey != null){
             byte[] secretKeyBytes = Encoding.UTF8.GetBytes(secretKey);
             byte[] messageBytes = Encoding.UTF8.GetBytes(id.ToString());
-            
-            using (HMACSHA256 hmac = new(secretKeyBytes))
-            {
-                byte[] hashBytes = hmac.ComputeHash(messageBytes);
-                hash = Convert.ToBase64String(hashBytes);
-                string url_safe_id = _manager.encode(hash);
 
-                Console.WriteLine("HMAC hash: " + hash);
-                return url_safe_id;
-            }
+            using HMACSHA256 hmac = new(secretKeyBytes);
+            byte[] hashBytes = hmac.ComputeHash(messageBytes);
+            hash = Convert.ToBase64String(hashBytes);
+            string url_safe_id = _manager.Encode(hash);
+
+            Console.WriteLine("HMAC hash: " + hash);
+            return url_safe_id;
         }
         return "";
     }
 
-    private bool SendEmail(UtenteDto GuestUser, string id){
+    private bool SendEmail(UserDTO GuestUser, string id){
     try{
-        if(GuestUser.email != null){
+        if(GuestUser.Email != null){
             var service = new EmailService(_configuration);
             string verifyToken = _manager.GenEmailVerifyToken(id);
             Console.WriteLine(verifyToken);
-            Console.WriteLine($"VERIFY EMAIL TOKEN IS VALID ON GEN {_manager.ValidateVerifyEmailToken(verifyToken).statusCode}");
+            Console.WriteLine($"VERIFY EMAIL TOKEN IS VALID ON GEN {_manager.ValidateVerifyEmailToken(verifyToken).StatusCode}");
             string encodedToken = System.Convert.ToBase64String(Encoding.ASCII.GetBytes(verifyToken))
             .TrimEnd(padding).Replace('+', '-').Replace('/', '_');
             
@@ -86,7 +80,7 @@ public class SignUpController : ControllerBase
                 <br/>
                 <a href="{verifyLink}">{verifyLink}</a>
             """,
-                    To = GuestUser.email
+                    To = GuestUser.Email
                 };
                 if (service.SendEmail(email)){
                 return true;
@@ -102,7 +96,7 @@ public class SignUpController : ControllerBase
         }
     }
 
-    [HttpPost("oauth")]
+    [HttpPost("oauthlogin")]
     public ActionResult OuathLogin([FromForm] string idToken){
         
         GoogleJsonWebSignature.Payload payload = GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
@@ -112,14 +106,14 @@ public class SignUpController : ControllerBase
 
         Console.WriteLine($"PAYLOAD NULL {payload is not null}");
         if(payload != null){
-            Utente? user = _context.utente.SingleOrDefault(user => user.hashed_id == HmacHash(payload.Subject));
+            User? user = _context.User.SingleOrDefault(user => user.HashedId == HmacHash(payload.Subject));
             if(user is not null){     
                 Console.WriteLine("UTENTE ESISTE");     
-                return Ok($"{_manager.GenIdToken(user)}@{_manager.GenAccessToken(user.hashed_id!)}@{_manager.GenRefreshToken(user.hashed_id!)}");
+                return Ok($"{_manager.GenIdToken(user)}@{_manager.GenAccessToken(user.HashedId!)}@{_manager.GenRefreshToken(user.HashedId!)}");
             }else{
-                UtenteGoogleSignUp googleUser = new(payload.Subject, payload.GivenName, payload.FamilyName, payload.Email);
+                GoogleUserSignUp googleUser = new(payload.Subject, payload.GivenName, payload.FamilyName, payload.Email);
                 if(payload.Picture != ""){
-                    googleUser.propic = payload.Picture;
+                    googleUser.Propic = payload.Picture;
                 }
                 Console.WriteLine("UTENTE NON ESISTE");
                 return Unauthorized(_manager.GenGoogleSignUpToken(payload));
@@ -127,61 +121,60 @@ public class SignUpController : ControllerBase
         }
         return Forbid();
     }
-    [HttpPost("oauth/signup")]
-    public async Task<IActionResult> OuathSignup([FromBody] UtenteGoogle user, [FromHeader(Name = "Authentication")] string token){
+    [HttpPost("oauthsignup")]
+    public async Task<IActionResult> OuathSignup([FromBody] GoogleUser user, [FromHeader(Name = "Authentication")] string token){
         var isValid = _manager.ValidateGoogleSignUpToken(token);
-        if(isValid.statusCode == 200){
-            Utente? registeredUser = _context.utente.SingleOrDefault(u => u.hashed_id == HmacHash(user.sub!));
+        if(isValid.StatusCode == 200){
+            User? registeredUser = _context.User.SingleOrDefault(u => u.HashedId == HmacHash(user.Sub!));
             if(registeredUser is not null){
-                return BadRequest("Utente gia' presente");
+                return BadRequest("User gia' presente");
             }else{
                 var id  = Guid.NewGuid();
-                Utente newUser = new(){
-                    id = id, 
-                    nome = user.nome, 
-                    cognome = user.cognome, 
-                    comune = user.comune,
-                    data_nascita = user.data_nascita,
-                    email = user.email,
-                    password = BCrypt.Net.BCrypt.HashPassword(token),
-                    hashed_id = HmacHash(user.sub!),
-                    created_at = DateTime.Now,
-                    verified = true
+                User newUser = new(){
+                    Id = id, 
+                    Name = user.Name, 
+                    Surname = user.Surname, 
+                    City = user.City,
+                    DateOfBirth = user.DateOfBirth,
+                    Email = user.Email,
+                    Password = BCrypt.Net.BCrypt.HashPassword(token),
+                    HashedId = HmacHash(user.Sub!),
+                    CreatedAt = DateTime.Now,
+                    Verified = true
                 };
                 _context.Add(newUser);
                 await _context.SaveChangesAsync();
-                return Ok($"{_manager.GenIdToken(newUser)}@{_manager.GenAccessToken(newUser.hashed_id!)}@{_manager.GenRefreshToken(newUser.hashed_id!)}");;
+                return Ok($"{_manager.GenIdToken(newUser)}@{_manager.GenAccessToken(newUser.HashedId!)}@{_manager.GenRefreshToken(newUser.HashedId!)}");;
             }
         }else{
-            return StatusCode(isValid.statusCode);
+            return StatusCode(isValid.StatusCode);
         }
        
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostSignup([FromBody] UtenteDto GuestUser)
+    public async Task<IActionResult> PostSignup([FromBody] UserDTO GuestUser)
     {
         try{
-            var user = _context.utente.FirstOrDefault(user => user.email == GuestUser.email);
+            var user = _context.User.FirstOrDefault(user => user.Email == GuestUser.Email);
             if(user == null){
                 Guid id = Guid.NewGuid();
-                string hashed_id = HmacHash(id.ToString());
-                bool emailSent = SendEmail(GuestUser, hashed_id);
+                string HashedId = HmacHash(id.ToString());
+                bool emailSent = SendEmail(GuestUser, HashedId);
                 Console.WriteLine($"email sent: {emailSent}");
                 if(emailSent == true){
-                    Utente newUser = new();
-                    newUser = newUser.fromUserDto(GuestUser) ?? throw new DataNotValid("dati utente errati");
-                    newUser.id = id;
-                    newUser.hashed_id = hashed_id;                
-                    _context.utente.Add(newUser);
-                    
+                    User newUser = new();
+                    newUser = newUser.FomUserDTO(GuestUser) ?? throw new DataNotValid("dati user errati");
+                    newUser.Id = id;
+                    newUser.HashedId = HashedId;                
+                    _context.User.Add(newUser);
                     await _context.SaveChangesAsync();
                     return Ok("Nuovo Privato inserito!");
                 }else{
                     return BadRequest("l'email non e' corretta");
                 }
             }else{
-                throw new UserNotFound("utente gia' presente!"); 
+                throw new UserNotFound("user gia' presente!"); 
             }   
         }
         catch(UserNotFound e){

@@ -6,17 +6,16 @@ namespace Fuocherello.Models{
     public class Legname {
     
         [Key]
-        public Guid? id { get; set; } = new Guid();
-        public string? autore { get; set; }
-        public string? titolo { get; set; }
-        public string? descrizione { get; set; }
-        public double prezzo { get; set; }
-        public List<string>? immagini_prodotto { get; set; } = new List<string>();
-        public string? categoria { get; set; }
-        public DateTime? created_at { get; set; } = DateTime.Now;
-        public string? luogo_di_pubblicazione { get; set; }
-        public DateTime? ultima_modifica { get; set; } = DateTime.Now;
-        public string? tipo_autore {get; set; } = "utente";
+        public Guid? Id { get; set; } = new Guid();
+        public string? Author { get; set; }
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public double Price { get; set; }
+        public List<string>? ProductImages { get; set; } = new List<string>();
+        public string? Category { get; set; }
+        public DateTime? CreatedAt { get; set; } = DateTime.Now;
+        public string? Place { get; set; }
+        public DateTime? UpdatedAt { get; set; } = DateTime.Now;    
         
     }
 }

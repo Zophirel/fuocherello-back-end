@@ -22,20 +22,19 @@ public class LoginController : ControllerBase
     [HttpPost]
     public ActionResult PostLogin([FromBody] Login GuestUser){ 
         try{
-            Console.WriteLine("ok 1");
-            var user = _context.utente.FirstOrDefault(user => user.email == GuestUser.Email);
+            var user = _context.User.FirstOrDefault(user => user.Email == GuestUser.Email);
             
             if(user == null){
                 throw new Exception("Email non registrata");
             }
-            else if(!BCrypt.Net.BCrypt.Verify(GuestUser.Password, user!.password)){
+            else if(!BCrypt.Net.BCrypt.Verify(GuestUser.Password, user!.Password)){
                 throw new Exception("Credenziali errate");
             }
-            else if(!user.verified){
+            else if(!user.Verified){
                 throw new Exception("Email non verificata");   
             }
             else{
-                string result = $"{_manager!.GenIdToken(user)}@{_manager.GenAccessToken(user.hashed_id!)}@{_manager.GenRefreshToken(user.hashed_id!)}";
+                string result = $"{_manager!.GenIdToken(user)}@{_manager.GenAccessToken(user.HashedId!)}@{_manager.GenRefreshToken(user.HashedId!)}";
                 return Ok(result);     
             }
         }

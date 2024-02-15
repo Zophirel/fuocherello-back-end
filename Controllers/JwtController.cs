@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Fuocherello.Data;
 using Fuocherello.Singleton.JwtManager;
+
+
 namespace Fuocherello.Controllers;
 
 [ApiController]
@@ -11,9 +13,9 @@ public class JwtController : ControllerBase
     private readonly ApiServerContext _context;
     private readonly IJwtManager? _manager;
     private readonly IConfiguration _configuration;
-    public JwtController(ApiServerContext _context,  IConfiguration configuration, JwtManager manager)
+    public JwtController(ApiServerContext Context,  IConfiguration configuration, JwtManager manager)
     {
-        this._context = _context;
+        this._context = Context;
         _manager = manager;
         _configuration = configuration;
     }

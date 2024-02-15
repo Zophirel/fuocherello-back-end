@@ -6,8 +6,8 @@ using Fuocherello.Models;
 using Google.Apis.Auth;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
-namespace Fuocherello.Singleton.JwtManager
 
+namespace Fuocherello.Singleton.JwtManager
 {
     public class MyStatusCodeResult{
 
@@ -21,8 +21,8 @@ namespace Fuocherello.Singleton.JwtManager
     }
     
     public class JwtManager : IJwtManager
-    { 
-        static readonly char[] padding = { '=' };
+    {
+        private static readonly char[] padding = { '=' };
         private readonly JwtSecurityTokenHandler _tokenHandler = new();
         private readonly TokenValidationParameters? _validationParameters;
         private readonly JwtHeader? _header;
@@ -78,7 +78,7 @@ namespace Fuocherello.Singleton.JwtManager
             return Encoding.ASCII.GetString(bytes);
         }
 
-        static string readASJson(string token){
+        private static string readASJson(string token){
             var jwtHandler = new JwtSecurityTokenHandler();
             var jwt = jwtHandler.ReadJwtToken(token);
             return jwt.Payload.SerializeToJson();
@@ -114,17 +114,17 @@ namespace Fuocherello.Singleton.JwtManager
 
         } 
        
-        public string GenIdToken(Utente user){
-            DateTime data = user.data_nascita!.Value;
-            var DataNascita = $"{data.Year}-{data.Month}-{data.Day}";
+        public string GenIdToken(User user){
+            DateTime data = user.DateOfBirth!.Value;
+            var DateOfBirth = $"{data.Year}-{data.Month}-{data.Day}";
             var claims = new []{
-                new Claim("sub", user.hashed_id!),
-                new Claim("Nome", user.nome!),
-                new Claim("Cognome", user.cognome!),
-                new Claim("Comune", user.comune!),
-                new Claim("Email", user.email!),
-                new Claim("DataNascita", DataNascita),
-                //new Claim("ChatKey", _context.utente_keys.First(key => key.user_id == user.hashed_id).private_key!)
+                new Claim("sub", user.HashedId!),
+                new Claim("name", user.Name!),
+                new Claim("surname", user.Surname!),
+                new Claim("city", user.City!),
+                new Claim("email", user.Email!),
+                new Claim("dateOfBirth", DateOfBirth),
+                //new Claim("ChatKey", _context.utente_keys.First(key => key.user_id == user.HashedId).private_key!)
             };
 
             var payload = new JwtPayload("https://www.zophirel.it:8443", "", claims, DateTime.UtcNow, DateTime.UtcNow.AddMilliseconds(1), DateTime.UtcNow);

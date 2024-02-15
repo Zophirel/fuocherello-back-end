@@ -1,9 +1,10 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using final.Data;
-using final.Models;
-using final.Services.EmailService;
+using Fuocherello.Data;
+using Fuocherello.Models;
+using Fuocherello.Services.EmailService;
+using Fuocherello.Singleton.JwtManager;
 
 namespace Fuocherello.Controllers;
 
@@ -27,9 +28,9 @@ public class ChangePassController : ControllerBase
         .Build();                   
         var service = new EmailService(configuration);
         EmailDTO email = new();
-        string token = _manager!.GenChangePassToken(id);
-        string encodedToken = _manager.encode(token);
-        string reoverPassLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=fuocherello://changepass/{encodedToken}";
+        string token = _manager.GenChangePassToken(id);
+        string encodedToken = _manager.Encode(token);
+        string reoverPassLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=Fuocherello://changepass/{encodedToken}";
         email.Subject = "Fuocherello - Richiesta cambio password";
         email.Body = 
         $"""
@@ -47,9 +48,9 @@ public class ChangePassController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetChangePassTokenAsync([FromHeader] string emailTo){  
         try{
-            var user = _context.utente.SingleOrDefault(user => user.email == emailTo);
+            var user = _context.User.SingleOrDefault(user => user.Email == emailTo);
             if(user is not null){
-                var id = user.hashed_id;
+                var id = user.HashedId;
                 await _SendEmail(id!.ToString(), emailTo);
                 return Ok();
             }else{
@@ -70,14 +71,14 @@ public class ChangePassController : ControllerBase
 
         if(isValid!.StatusCode == 200){
             var UserId = _manager.ExtractSub(decodedToken);
-            Utente? user = _context.utente.SingleOrDefault(user => user.hashed_id == UserId);
+            User? user = _context.User.SingleOrDefault(user => user.HashedId == UserId);
             if(user is not null){
                 var hashedPass = BCrypt.Net.BCrypt.HashPassword(password);
-                user.password = hashedPass;
+                user.Password = hashedPass;
                 _context.SaveChanges();
                 return Ok();
             }else{
-                Console.WriteLine("utente non trovato");
+                Console.WriteLine("User non trovato");
                 return BadRequest();
             }   
         }else{

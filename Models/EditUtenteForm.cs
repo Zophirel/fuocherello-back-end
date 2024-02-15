@@ -1,17 +1,17 @@
 namespace Fuocherello.Models;
-public class EditUtenteForm{
-    public EditUtenteForm(){}
-    public EditUtenteForm(string Nome, string Cognome, string Comune, DateTime DataDiNascita)
+public class EditUserForm{
+    public EditUserForm(){}
+    public EditUserForm(string Name, string Surname, string City, DateTime DateOfBirth)
     {
-        this.Nome = Nome;
-        this.Cognome = Cognome;
-        this.Comune = Comune;
-        this.DataDiNascita = DataDiNascita;
+        this.Name = Name;
+        this.Surname = Surname;
+        this.City = City;
+        this.DateOfBirth = DateOfBirth;
     }
 
-    public string? Nome {get; set;} = null;
-    public string? Cognome {get; set;} = null;
-    public string? Comune {get; set;} = null;
-    public DateTime? DataDiNascita {get; set;} = null;
+    public string? Name {get; set;} = null;
+    public string? Surname {get; set;} = null;
+    public string? City {get; set;} = null;
+    public DateTime? DateOfBirth {get; set;} = null;
 
 }

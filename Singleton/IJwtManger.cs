@@ -10,7 +10,7 @@ namespace Fuocherello.Singleton.JwtManager
         public string? ExtractSub(string token);
         public string? ExtractType(string token);
         public string? ExtractRole(string token);
-        public string GenIdToken(Utente user);
+        public string GenIdToken(User user);
         public string GenAccessToken(string id);
         public string GenRefreshToken(string id);
         public string GenEmailVerifyToken(string id);

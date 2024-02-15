@@ -4,21 +4,21 @@ namespace Fuocherello.Models;
 public class ChatList{
 
     public ChatList(){
-        id = Guid.NewGuid();
+        Id = Guid.NewGuid();
     }
-    public ChatList(Guid prod_id, string buyer_id, string seller_id)
+    public ChatList(Guid prodId, string buyerId, string sellerId)
     {
         
-        id = Guid.NewGuid();
-        this.prod_id = prod_id;
-        compratore_id = buyer_id;
-        venditore_id = seller_id;
+        Id = Guid.NewGuid();
+        this.ProdId = prodId;
+        BuyerId = buyerId;
+        SellerId = sellerId;
     }
 
     [Key]
-    public Guid id {get; set;}
-    public Guid prod_id {get; set;}
-    public string? compratore_id {get; set;}
-    public string? venditore_id {get; set;}
+    public Guid Id {get; set;}
+    public Guid ProdId {get; set;}
+    public string? BuyerId {get; set;}
+    public string? SellerId {get; set;}
 
 }

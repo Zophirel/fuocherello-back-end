@@ -1,8 +1,9 @@
+
 using System.ComponentModel.DataAnnotations;
 
 namespace Fuocherello.Models{
 
-    public class Pellet {
+    public class Product {
     
         [Key]
         public Guid? Id { get; set; } = new Guid();
@@ -14,6 +15,7 @@ namespace Fuocherello.Models{
         public string? Category { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public string? Place { get; set; }
-        public DateTime? UpdatedAt { get; set; } = DateTime.Now;    
+        public DateTime? UptadedAt { get; set; } = DateTime.Now;
+        
     }
 }

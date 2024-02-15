@@ -2,13 +2,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Fuocherello.Models;
 public class UserMessage{
-    public  Guid? id {get; set;}
-    public  Guid? chat_id {get; set;}
-    public  Guid? prod_id {get; set;}
-    public string? mandante_id {get; set;}
-    public string? messaggio {get; set;}
-    public  ulong? sent_at {get; set;}
-    public  bool? delivered {get; set;}
+    public  Guid? Id {get; set;}
+    public  Guid? ChatId {get; set;}
+    public  Guid? ProdId {get; set;}
+    public string? SenderId {get; set;}
+    public string? Message {get; set;}
+    public  ulong? SentAt {get; set;}
+    public  bool? Delivered {get; set;}
 
     public UserMessage(){}
 
@@ -23,13 +23,13 @@ public class UserMessage{
             chat_id = Guid.Parse(message["chatId"]!.ToString());
         }
 
-        id = Guid.NewGuid();
-        this.chat_id = chat_id;
-        prod_id = Guid.Parse(message["prodId"]!.ToString());
-        mandante_id = message["from"]!.ToString();
-        messaggio = message["message"]!.ToString();
-        sent_at = ulong.Parse(message["sentAt"]!.ToString());
-        delivered = false;
+        Id = Guid.NewGuid();
+        ChatId = chat_id;
+        ProdId = Guid.Parse(message["prodId"]!.ToString());
+        SenderId = message["from"]!.ToString();
+        Message = message["message"]!.ToString();
+        SentAt = ulong.Parse(message["sentAt"]!.ToString());
+        Delivered = false;
         return this;
     }
 
@@ -37,7 +37,7 @@ public class UserMessage{
         JObject data = JObject.Parse(jsonMessage);
         string begin = "{";
         string end = "}";
-        string json = $""" "chatId" : "{chat_id}", "prodId" : "{prod_id}", "from" : "{mandante_id}", "to" : "{data["to"]}", "message" : "{messaggio}", "sentAt" : "{sent_at}" """;
+        string json = $""" "chatId" : "{ChatId}", "prodId" : "{ProdId}", "from" : "{SenderId}", "to" : "{data["to"]}", "message" : "{Message}", "sentAt" : "{SentAt}" """;
         json = begin + json.Substring(1, json.Length-1) + end;
         return json;
     }

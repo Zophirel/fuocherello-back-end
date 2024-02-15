@@ -50,11 +50,11 @@ namespace Fuocherello.Controllers
                     {
                         return Forbid();
                     }else{
-                        Utente? user = _context.utente.FirstOrDefault(user => user.hashed_id == sub);
-                        if(user != null && !user.verified){
+                        User? user = _context.User.FirstOrDefault(user => user.HashedId == sub);
+                        if(user != null && !user.Verified){
                             _context.Attach(user);
-                            user.verified = true;
-                            _context.Entry(user).Property(p => p.verified).IsModified = true;
+                            user.Verified = true;
+                            _context.Entry(user).Property(p => p.Verified).IsModified = true;
                             await _context.SaveChangesAsync();
                             return Ok();
                         }
