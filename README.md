@@ -16,21 +16,19 @@ An MVC project mainly composed by models, controllers and a custom helper the vi
 - **HTTPS:** Configured to use Lets encrypt ssl certificates
 - **Authentication:** Allows the users to log in, log out and sign up
 - **Oauth Authentication:** Allows the users to log in, log out and sign up using google as auth provider
-- **Editing User Profile :**	Allows users to edit the data provided during the sign up process
+- **Editing User Profile :** Allows users to edit the data provided during the sign up process
 - **Publishing Products** Allows users to ***publish, edit and delete*** their selling announcments
 - **Saving Products :**	Allows users to save the selling announcments they are intrested in
-- **Searching Products :**	Allows users to search for selling announcments from an input field
+- **Searching Products :** Allows users to search for selling announcments from an input field
 - **S3 Configured:** The server uses an S3 client to manage all the image files sent by the client
 - **Dynamic Links:** Allows the user to open the client app from an external link
 - **Email:** Send an email to verify users when signign up or when they need to replace their password
-
+- **Message Storing:** Allows to store messages sent between users in order to be recovered if a user uninstall or log out from the client app
 
 ## How to build
-	├── /bin
 	├── /Controllers
 	├── /Data
 	├── /Models
-	├── /obj
 	├── /Properties
 	├── /Services
 	├── /Singleton
