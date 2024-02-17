@@ -12,9 +12,10 @@ Models/AuthToken.cs
 Models/SignupPrivato.cs
 
 Data/ApiServerContext.cs.bak
-
+swap.sh
 appsettings.json.bak
 appsettings.Development.json.bak
 *.pfx
 
 key
+obj
