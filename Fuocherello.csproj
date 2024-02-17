@@ -16,6 +16,7 @@
     <PackageReference Include="JWT.Extensions.AspNetCore" Version="10.0.1" />
     <PackageReference Include="JWT.Extensions.DependencyInjection" Version="2.2.2" />
     <PackageReference Include="MailKit" Version="4.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.16" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OAuth" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.1" />
