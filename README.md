@@ -54,6 +54,7 @@ In these files is specified the configuration needed to connect the server with:
   "Kestrel": {
 
   (SSL certificate)
+  //add an ssl certificate or remove this key 
   "Certificates": {
     "Default": {
     "Path": "SslCertificate.pfx",
@@ -104,7 +105,7 @@ To generate the key you need to run this code in Progam.cs
 
 I tried generating keys with Python but it seems it has some compatibility issues 
 
-### 3. SslCertificate.pfx (missing file)
+### <a id="certificate">3. SslCertificate.pfx (missing file)</a>
 if you use windows, the SSL certifate shouldn't be a problem since it should be auto generated, i did the project from linux because the server that is hosting the code is a linux server, i used [cerbot](https://certbot.eff.org/ "cerbot") to get a certificate.
 
 once certbot is installed <br>
