@@ -17,5 +17,8 @@ appsettings.json.bak
 appsettings.Development.json.bak
 *.pfx
 
+bin/Debug/net7.0/appsettings.json
+bin/Debug/net7.0/appsettings.Development.json
+
 key
 obj
