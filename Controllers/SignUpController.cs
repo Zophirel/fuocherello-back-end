@@ -25,19 +25,7 @@ public class SignUpController : ControllerBase
         _configuration = configuration;
         _manager = manager;
     }
-
-    //GET per eseguire il lancio in app tramite deeplink 
-    [HttpGet("redirect")]
-    public IActionResult TriggerDeepLink([FromQuery] string url){
-        string[] splittedUrl = url.Substring(13).Split('/');
-        string encodedToken = splittedUrl.Last();
-        string pathParameter = splittedUrl[1]; 
-        
-        //redirect api force the server to serve only link inside the app
-        url = $"Fuocherello://app/{pathParameter}/{encodedToken}";
-        return new RedirectResult(url);
-    }
-    
+      
     private string HmacHash(string id)
     {
         string? secretKey = _configuration.GetValue<string>("SecretKey");
@@ -62,12 +50,10 @@ public class SignUpController : ControllerBase
         if(GuestUser.Email != null){
             var service = new EmailService(_configuration);
             string verifyToken = _manager.GenEmailVerifyToken(id);
-            Console.WriteLine(verifyToken);
-            Console.WriteLine($"VERIFY EMAIL TOKEN IS VALID ON GEN {_manager.ValidateVerifyEmailToken(verifyToken).StatusCode}");
             string encodedToken = System.Convert.ToBase64String(Encoding.ASCII.GetBytes(verifyToken))
             .TrimEnd(padding).Replace('+', '-').Replace('/', '_');
             
-            string verifyLink = $"https://www.zophirel.it:8443/signup/privato/redirect?url=Fuocherello://verifyemail/{encodedToken}";
+            string verifyLink = $"https://www.zophirel.it:8443/redirect?url=Fuocherello://verifyemail/{encodedToken}";
 
             Console.WriteLine("sending email");
                 EmailDTO email = new()
@@ -98,27 +84,29 @@ public class SignUpController : ControllerBase
 
     [HttpPost("oauthlogin")]
     public ActionResult OuathLogin([FromForm] string idToken){
-        
-        GoogleJsonWebSignature.Payload payload = GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
-        {
-            Audience = new List<string> { "746085633002-r4lsvaljlfdri7uvnio7l6l0g1ch51q2.apps.googleusercontent.com" }
-        }).Result;
+        try{
+            GoogleJsonWebSignature.Payload payload = GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new List<string> { "746085633002-r4lsvaljlfdri7uvnio7l6l0g1ch51q2.apps.googleusercontent.com" }
+            }).Result;
 
-        Console.WriteLine($"PAYLOAD NULL {payload is not null}");
-        if(payload != null){
-            User? user = _context.Users.SingleOrDefault(user => user.HashedId == HmacHash(payload.Subject));
-            if(user is not null){     
-                Console.WriteLine("UTENTE ESISTE");     
-                return Ok($"{_manager.GenIdToken(user)}@{_manager.GenAccessToken(user.HashedId!)}@{_manager.GenRefreshToken(user.HashedId!)}");
-            }else{
-                GoogleUserSignUp googleUser = new(payload.Subject, payload.GivenName, payload.FamilyName, payload.Email);
-                if(payload.Picture != ""){
-                    googleUser.Propic = payload.Picture;
+            if(payload != null){
+                User? user = _context.Users.SingleOrDefault(user => (user.HashedId == HmacHash(payload.Subject)) || (user.Email == payload.Email));
+                if(user is not null){     
+                    Console.WriteLine("UTENTE ESISTE");     
+                    return Ok($"{_manager.GenIdToken(user)}@{_manager.GenAccessToken(user.HashedId!)}@{_manager.GenRefreshToken(user.HashedId!)}");
+                }else{
+                    GoogleUserSignUp googleUser = new(payload.Subject, payload.GivenName, payload.FamilyName, payload.Email);
+                    if(payload.Picture != ""){
+                        googleUser.Propic = payload.Picture;
+                    }
+                    Console.WriteLine("UTENTE NON ESISTE");
+                    return Unauthorized(_manager.GenGoogleSignUpToken(payload));
                 }
-                Console.WriteLine("UTENTE NON ESISTE");
-                return Unauthorized(_manager.GenGoogleSignUpToken(payload));
             }
-        }
+        } catch {
+            return Forbid();
+        }  
         return Forbid();
     }
     [HttpPost("oauthsignup")]
@@ -129,9 +117,9 @@ public class SignUpController : ControllerBase
             if(registeredUser is not null){
                 return BadRequest("User gia' presente");
             }else{
-                var id  = Guid.NewGuid();
+
                 User newUser = new(){
-                    Id = id, 
+                    Id = Guid.NewGuid(),
                     Name = user.Name, 
                     Surname = user.Surname, 
                     City = user.City,
@@ -165,6 +153,7 @@ public class SignUpController : ControllerBase
                 if(emailSent == true){
                     User newUser = new();
                     newUser = newUser.FomUserDTO(GuestUser) ?? throw new DataNotValid("dati user errati");
+                    Console.WriteLine($"{newUser.Id} {newUser.HashedId} {newUser.Name} {newUser.Surname} {newUser.City} {newUser.DateOfBirth}");
                     newUser.Id = id;
                     newUser.HashedId = HashedId;                
                     _context.Users.Add(newUser);
