@@ -17,7 +17,7 @@ public class ChatList{
 
     [Key]
     public Guid Id {get; set;}
-    public Guid ProdId {get; set;}
+    public Guid? ProdId {get; set;}
     public string? BuyerId {get; set;}
     public string? SellerId {get; set;}
 
