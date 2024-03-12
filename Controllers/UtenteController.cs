@@ -9,6 +9,7 @@ using Npgsql;
 using NpgsqlTypes;
 using System.Text;
 using System.Text.Json;
+using System.Data;
 namespace Fuocherello.Controllers;
 
 [ApiController]
@@ -53,8 +54,8 @@ public class UserController : ControllerBase
             Dictionary<string, object> data = new()
             {
                 { "id", user.HashedId! },
-                { "nome", user.Name! },
-                { "cognome", user.Surname! },
+                { "Name", user.Name! },
+                { "Surname", user.Surname! },
                 { "propic", user.Propic == "" ? false : true }
             };
             
@@ -64,7 +65,7 @@ public class UserController : ControllerBase
         return Ok(json);
     }
 
-    [HttpGet("messaggi/latest")]
+    [HttpGet("messages/latest")]
     //return all the messages that a user couldn't receive while logged but disconnected from the signalr server
     public async Task<ActionResult> GetNotReceivedMessagges([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
@@ -99,17 +100,17 @@ public class UserController : ControllerBase
             getContactQuery.Parameters.Add("@id", NpgsqlDbType.Text).Value = sub;
             await using var reader = await getContactQuery.ExecuteReaderAsync();
             
-            List<Dictionary<string, string>> formattedData = new();            
+            List<Dictionary<string, string?>> formattedData = new();            
             while (await reader.ReadAsync())
             {
-                Dictionary<string, string> data = new()
+                Dictionary<string, string?> data = new()
                 {
                     { "id", reader.GetGuid(0).ToString() },
-                    { "chatId", reader.GetGuid(1).ToString() },
+                    { "chat_id", reader.GetGuid(1).ToString() },
                     { "from", reader.GetString(2) },
-                    { "prodId", reader.GetGuid(3).ToString() },
+                    { "prod_id", reader.GetValue(3).ToString() },
                     { "message", reader.GetString(4) },
-                    { "sentAt", reader.GetInt64(5).ToString() }
+                    { "sent_at", reader.GetInt64(5).ToString() }
                 };
                 formattedData.Add(data);
             }
@@ -121,9 +122,9 @@ public class UserController : ControllerBase
 
 
 
-    [HttpGet("messaggi")]
+    [HttpGet("messages")]
     //get all the user chat messages 
-    public async Task<ActionResult> GetMessaggi([FromHeader(Name = "Authentication")]string token){
+    public async Task<ActionResult> GetMessages([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
          if(isValid.StatusCode == 200){
             string sub = _manager.ExtractSub(token)!;
@@ -196,32 +197,44 @@ public class UserController : ControllerBase
                 product.id AS prod_id,
                 chat.id AS chat_id,
                 product.product_images
-                
             FROM public.chat_list AS chat
-            JOIN public.product AS product ON chat.prod_id = product.id
+            LEFT JOIN public.product AS product ON chat.prod_id = product.id
             LEFT JOIN public.users AS buyer ON chat.buyer_id = buyer.hashed_id
             LEFT JOIN public.users AS seller ON chat.seller_id = seller.hashed_id
-            WHERE chat.buyer_id = @id OR chat.seller_id = @id;
+            WHERE (chat.buyer_id = @id OR chat.seller_id = @id)
+            OR chat.prod_id IS NULL;
             """; 
 
             await using var getContactQuery = _conn.CreateCommand(query);
             getContactQuery.Parameters.Add("@id", NpgsqlDbType.Text).Value = sub;
             await using var reader = await getContactQuery.ExecuteReaderAsync();
-            List<Dictionary<string, string>> formattedData = new();
+            List<Dictionary<string, string?>> formattedData = new();
             UTF8Encoding utf8 = new();
             while (await reader.ReadAsync())
             {
-                Dictionary<string, string> data = new()
+                Dictionary<string, string?> data = new()
                 {
-                    { "id", reader.GetGuid(3).ToString() },
-                    { "prod_id", reader.GetGuid(2).ToString() },
-                    { "prod_name", reader.GetString(1) },
-                    { "contact_id", reader.GetString(0) },
+                    { "id", reader.GetValue(3).ToString() },
+                    { "prod_id", reader.GetValue(2).ToString() },
+                    { "prod_name", reader.GetValue(1).ToString() },
+                    { "contact_id", reader.GetValue(0).ToString() },
                     { "not_read_message", "0" },
-                    { "thumbnail", ((string[])reader.GetValue(4))[0] }
                 };
+                
+                var thumbnail = reader.GetValue(4);
+                Console.WriteLine($"THUMBNAIL: {thumbnail}");
+                if(thumbnail == DBNull.Value){
+                    data.Add("thumbnail", ""); 
+                }else{
+                    data.Add("thumbnail", ((string[])reader.GetValue(4)).FirstOrDefault() ?? "" );
+                }
+                
+                Console.WriteLine(reader.GetValue(2).ToString());
                 formattedData.Add(data);
+                
             }
+
+
             var json = JsonSerializer.Serialize(formattedData);
 
             return Ok(json);
@@ -229,7 +242,7 @@ public class UserController : ControllerBase
         return StatusCode(isValid.StatusCode);
     }
 
-    [HttpGet("contatti")]
+    [HttpGet("contacts")]
     public async Task<ActionResult> GetContacts([FromHeader(Name = "Authentication")]string token){
         var isValid = _manager!.ValidateAccessToken(token);
          if(isValid.StatusCode == 200){
@@ -315,4 +328,3 @@ public class UserController : ControllerBase
         return StatusCode(isValid.StatusCode);
     }
 }
-
