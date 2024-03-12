@@ -15,7 +15,7 @@ namespace Fuocherello.Models{
         public string? Category { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public string? Place { get; set; }
-        public DateTime? UptadedAt { get; set; } = DateTime.Now;
+        public DateTime? UpdatedAt { get; set; } = DateTime.Now;
         
     }
 }

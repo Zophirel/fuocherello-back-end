@@ -10,7 +10,6 @@ using Amazon.S3;
 using Amazon.Runtime;
 using System.Text;
 using Npgsql;
-using NuGet.Protocol;
 using System.Security.Cryptography;
 using Fuocherello.Singleton.JwtManager;
 namespace Fuocherello.Controllers;
@@ -95,15 +94,14 @@ public class ProductController : ControllerBase
             Dictionary<string, object> data = new()
             {
                 { "id", products[i].Id! },
-                { "Author", products[i].Author! },
+                { "author", products[i].Author! },
                 { "title", products[i].Title! },
                 { "description", products[i].Description! },
-                { "prezzo", products[i].Price },
-                { "immagini_prodotto", products[i].ProductImages! },
-                { "categoria", products[i].Category! },
+                { "price", products[i].Price },
+                { "product_images", products[i].ProductImages! },
+                { "category", products[i].Category! },
                 { "created_at", products[i].CreatedAt! },
-                { "luogo_di_pubblicazione", products[i].Place! },
-                { "tipo_Author", "utente" }
+                { "place", products[i].Place! },
             };
             formattedData.Add(data);
         }
@@ -124,7 +122,7 @@ public class ProductController : ControllerBase
         const string singleWordQuery = 
         """
             SELECT id, author, title, description, price, product_images, category, created_at, place
-            FROM prodcuts
+            FROM product
             WHERE LOWER(title) LIKE LOWER(@input);
         """;
 
@@ -160,20 +158,20 @@ public class ProductController : ControllerBase
         return Ok(json);
     }
 
-    [HttpGet("tipo")]
-    // GET: api/Product/tipo]
-    public ActionResult GetProductByTipo(string tipo)
+    [HttpGet("category")]
+    // GET: api/Product/category]
+    public ActionResult GetProductByCategory(string category)
     {
         try
         {
-            if(tipo != "legname" && tipo != "biomasse" && tipo != "pellet"){
-                return BadRequest("Tipo Product errato");
+            if(category != "legname" && category != "biomasse" && category != "pellet"){
+                return BadRequest("Category Product errato");
             }else{
                 //List<Product> products_filtrati = 
                 Console.WriteLine("products selezionati");
-                if(tipo == "legname"){
+                if(category == "legname"){
                     return Ok(JsonSerializer.Serialize(_context.Legname.ToList()));
-                }else if(tipo == "biomasse"){
+                }else if(category == "biomasse"){
                     return Ok(JsonSerializer.Serialize(_context.Biomasse.ToList()));
                 }
                 return Ok(JsonSerializer.Serialize(_context.Pellet.ToList()));
@@ -247,12 +245,15 @@ public class ProductController : ControllerBase
     public async Task<ActionResult> PutProduct([FromHeader(Name = "Authentication")] string token, [FromForm] Product Product, [FromForm(Name = "files")] List<IFormFile> files)
     {
         try{
+            
             MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
 
             if (isValid.StatusCode == 200)
             {
+                Console.WriteLine("PUT PRODUCT");
                 string? role = _manager.ExtractRole(token);
                 string? sub = _manager.ExtractSub(token);
+
                 Console.WriteLine(sub);
                 Product? productToUpdate = _context.Product.FirstOrDefault(prod => prod.Author == sub && prod.Id == Product.Id);
                 
@@ -265,14 +266,9 @@ public class ProductController : ControllerBase
                     return Forbid();
                 }
 
-                if(files.Count > 0){
-                    productToUpdate.ProductImages = await PutProductImagesToBucket(files, productToUpdate);
-                    if(productToUpdate.ProductImages.Count == 0){
-                        Console.WriteLine("Errore nell'inserimento delle immagini");
-                        return BadRequest();
-                    }
-                }    
-                
+         
+                productToUpdate.ProductImages = await PutProductImagesToBucket(files, productToUpdate);
+         
                 if(CheckTitle(Product.Title) && CheckDescription(Product.Description) && IsPriceValid(Product.Price) && Product.Category != null)
                 {
                     if(productToUpdate != null){   
@@ -296,13 +292,13 @@ public class ProductController : ControllerBase
                             if(isCategoryModified){
                                 productToUpdate.Category = Product.Category;
                             }
-                            productToUpdate.UptadedAt = DateTime.Now;
+                            productToUpdate.UpdatedAt = DateTime.Now;
 
                             _context.Entry(productToUpdate).Property(p => p.Title).IsModified = isTitleModified;
                             _context.Entry(productToUpdate).Property(p => p.Description).IsModified = isDescriptionModified;
                             _context.Entry(productToUpdate).Property(p => p.Price).IsModified = isPriceModified;
                             _context.Entry(productToUpdate).Property(p => p.Category).IsModified = isCategoryModified;
-                            _context.Entry(productToUpdate).Property(p => p.UptadedAt).IsModified = true;
+                            _context.Entry(productToUpdate).Property(p => p.UpdatedAt).IsModified = true;
                             await _context.SaveChangesAsync();
                             return Ok(JsonSerializer.Serialize(productToUpdate));
                         }else{
@@ -358,7 +354,9 @@ public class ProductController : ControllerBase
     public async Task<ActionResult<Product>> PostProductAsync([FromHeader(Name = "Authentication")] string token, [FromForm] ProductDTO Product, [FromForm(Name = "files")] List<IFormFile> files)
     {
         try{
-            MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
+
+            MyStatusCodeResult isValid = _manager!.ValidateAccessToken(token);
+   
             if (isValid.StatusCode == 200)
             {
                 string? role = _manager.ExtractRole(token);
@@ -371,7 +369,7 @@ public class ProductController : ControllerBase
                 else if(CheckTitle(Product.Title) && CheckDescription(Product.Description) && IsPriceValid(Product.Price) && GetProductType(Product) != null)
                 {
                     //set prodct's information
-                    Console.Write("creando il prodotto");
+                    Console.WriteLine("creando il prodotto");
                     Product NuovoProduct = new()
                     {
                         Id = Guid.NewGuid(),
@@ -451,37 +449,38 @@ public class ProductController : ControllerBase
                 }
                 else
                 {
+                    Console.WriteLine("DELETING PRODUCT");
+                    Console.WriteLine(id);                
                     var prod = await _context.Product.FindAsync(id);
-                    if(prod != null && prod.Author == sub){
-                        var folderPath = $"products/{sub}/{id}";
 
-        
-                        try{     
-                            //delete selcted image file from the cloud
-                            var listObjectsRequest = new ListObjectsRequest
-                            {
-                                BucketName = "fuocherello-bucket",
-                                Prefix = folderPath
-                            };
+                    Console.WriteLine(prod?.Id);
 
-                            var listObjectsResponse = await _s3Client.ListObjectsAsync(listObjectsRequest);
+                    if(prod != null && prod.Author == sub){    
+                        if(prod.ProductImages != null && prod.ProductImages.Count > 0){
+                            try{ 
+                                //delete selcted image file from the cloud
+                                var folderPath = $"products/{sub}/{id}";
+                                var listObjectsRequest = new ListObjectsRequest
+                                {
+                                    BucketName = "fuocherello-bucket",
+                                    Prefix = folderPath
+                                };
 
-                            var deleteObjectsRequest = new DeleteObjectsRequest
-                            {
-                                BucketName = "fuocherello-bucket",
-                                Objects = listObjectsResponse.S3Objects.Select(obj => new KeyVersion { Key = obj.Key }).ToList()
-                            };
+                                var listObjectsResponse = await _s3Client.ListObjectsAsync(listObjectsRequest);
 
-                            var deleteObjectsResponse = await _s3Client.DeleteObjectsAsync(deleteObjectsRequest);
-                            Console.WriteLine($"Successfully deleted {deleteObjectsResponse.DeletedObjects.Count} objects.");
-                            
-                            Console.WriteLine(deleteObjectsResponse.ToJson());
-                            _context.Product.Remove(prod);
-                            await _context.SaveChangesAsync();
-                        }catch(AmazonS3Exception ex){
-                            Console.WriteLine($"Error: '{ex.Message}' when deleting an object");  
+                                var deleteObjectsRequest = new DeleteObjectsRequest
+                                {
+                                    BucketName = "fuocherello-bucket",
+                                    Objects = listObjectsResponse.S3Objects.Select(obj => new KeyVersion { Key = obj.Key }).ToList()
+                                };
+
+                                var deleteObjectsResponse = await _s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+                            }catch(AmazonS3Exception ex){
+                                Console.WriteLine($"Error: '{ex.Message}'");  
+                            }
                         }
-
+                        _context.Product.Remove(prod);
+                        await _context.SaveChangesAsync();
                     }
                 }
             }
@@ -491,8 +490,6 @@ public class ProductController : ControllerBase
             return BadRequest(e.Message);
         } 
     }
-
-    private bool ProductExists(Guid id) => (_context.Product?.Any(e => e.Id == id)).GetValueOrDefault();
     
     //IMAGES MANAGEMENT
     private string HmacHash(Guid? id)
@@ -603,7 +600,9 @@ public class ProductController : ControllerBase
         var uploadedFileName = files.Select(file => file.FileName).ToList().GetRange(0, rangeToSelect);
         foreach (var file in files.GetRange(0, rangeToSelect))
         {
+
             var filename = _manager.Encode(HmacHash(Guid.NewGuid()))+".jpeg";
+            Console.WriteLine($"FILENAME: {filename}");
             var imgPath = $"products/{sub}/{prod.Id}/{filename}";
             PutObjectRequest request = new()
             {
@@ -620,7 +619,8 @@ public class ProductController : ControllerBase
                 var index = uploadedFileName.IndexOf(file.FileName);
                 uploadedFileName[index] = filename;
             }catch(AmazonS3Exception ex){
-                Console.WriteLine($"Error: '{ex.Message}' when writing an object");
+                
+                Console.WriteLine($"Error: '{ex.ErrorType} {ex.Message} {ex.ErrorCode}' when writing an object");
                 return new List<string>();
             }
         }
@@ -635,6 +635,8 @@ public class ProductController : ControllerBase
         {  
             //check if product exists
             if(prod != null){
+                Console.WriteLine("PROD NOT NULL");
+                
                 //Get old images filenames from bucket
                 ListObjectsV2Request listOldFilesRequest = new()
                 {                            
@@ -652,9 +654,9 @@ public class ProductController : ControllerBase
                 List<string> newFileName = new();
 
                 if(numberOfOldFiles > 0){
+                    Console.WriteLine("GETTING OLD IMAGES NAMES");
                     oldFileName = oldFiles.S3Objects.Select(file => ExtractImageNameFromPath(file.Key)).ToList();
                 }else if(numberOfOldFiles == 0){
-                
                     for(int i = 0; i < numberOfNewFiles && i < 5; i++){    
                         newFileName.Add($"{_manager.Encode(HmacHash(Guid.NewGuid()))}.jpeg");
                     }
@@ -666,7 +668,8 @@ public class ProductController : ControllerBase
                     newFileName = files.GetRange(0, numberOfNewFiles >= 5 ? 4 : numberOfNewFiles).Select(file => file.FileName).ToList();
                     numberOfNewFiles = newFileName.Count;
                 }else if(numberOfNewFiles == 0){
-                    
+                    Console.WriteLine("0 FILE RECEIVED");
+                    Console.WriteLine($"{oldFileName}");
                     await DeleteProductImagesFromBucket(prod.Author!, prod.Id.ToString()!, oldFileName);
                     await UploadImageNameToDb(newFileName, prod.Author!, prod.Id);
                     return newFileName;
@@ -691,4 +694,3 @@ public class ProductController : ControllerBase
     }
 
 }
-
