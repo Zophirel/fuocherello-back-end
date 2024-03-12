@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using Fuocherello.Services.EmailService;
 using Npgsql;
 using Fuocherello.Singleton.JwtManager;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 //DB connection
@@ -17,13 +18,6 @@ builder.Services.AddDbContext<ApiServerContext>(options => {
 });
 await using var dataSource = NpgsqlDataSource.Create(ConnString);
 builder.Services.AddSingleton(dataSource);
-
-string filename = "key";
-using (RSA rsa = RSA.Create())
-{
-    byte[] privateKeyBytes = rsa.ExportRSAPrivateKey();
-    File.WriteAllBytes(filename, privateKeyBytes);
-}
 
 RSA rsaKey = RSA.Create();
 rsaKey.ImportRSAPrivateKey(File.ReadAllBytes("key"), out _);
@@ -89,6 +83,28 @@ app.MapGet("/.well-known/assetlinks.json", async (HttpContext context) =>
 
     context.Response.ContentType = "application/json";
    await context.Response.SendFileAsync(fileInfo.FullName);
+});
+
+
+app.MapGet("/redirect", async context =>
+{
+    string? url = context.Request.Query["url"];
+
+    if (url != null)
+    {
+        string[] splittedUrl = url.Substring(13).Split('/');
+        string encodedToken = splittedUrl.Last();
+        string pathParameter = splittedUrl[1];
+
+        // Redirect API forces the server to serve only links inside the app
+        url = $"Fuocherello://app/{pathParameter}/{encodedToken}";
+        context.Response.Redirect(url);
+    }
+    else
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsync("URL parameter is missing");
+    }
 });
 
 var webSocketOptions = new WebSocketOptions
