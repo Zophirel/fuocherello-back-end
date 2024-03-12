@@ -435,7 +435,7 @@ public class ImagesController : ControllerBase
     }
 
   [HttpPut("Chat")]
-    public async Task<IActionResult> PutChatPicToBucket([FromForm(Name = "files")] List<IFormFile> files, [FromForm] string chatId, [FromHeader(Name = "Authentication")] string token){
+    public async Task<IActionResult> PutChatPicToBucket([FromForm(Name = "files")] List<IFormFile> files, [FromHeader(Name = "ChatId")] string chatId, [FromHeader(Name = "Authentication")] string token){
         MyStatusCodeResult isValid = _manager.ValidateAccessToken(token);
         if(isValid.StatusCode == 200){
             //check if the chat exists and if the user partecipate in the chat
@@ -469,10 +469,8 @@ public class ImagesController : ControllerBase
                             SentAt = (ulong)((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds()
                         };
                         
+                        //send the image to the s3 storage, the message will be saved in the db by the chat server
                         messages.Add(data);
-                        await _context.Message.AddAsync(data);
-                        await _context.SaveChangesAsync();
-                        //send the image to the s3 storage
                         await s3Client.PutObjectAsync(request);
                     }else{
                         return BadRequest();
