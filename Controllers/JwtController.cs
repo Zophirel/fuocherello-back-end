@@ -13,7 +13,7 @@ public class JwtController : ControllerBase
     private readonly ApiServerContext _context;
     private readonly IJwtManager? _manager;
     private readonly IConfiguration _configuration;
-    public JwtController(ApiServerContext Context,  IConfiguration configuration, JwtManager manager)
+    public JwtController(ApiServerContext Context,  IConfiguration configuration, IJwtManager manager)
     {
         this._context = Context;
         _manager = manager;
